@@ -7,7 +7,7 @@ from telethon.extensions import html
 from read_config import configs
 from enums import ConfigProperty
 from logger import logger, LogLevel as Level
-from playground import MessageHandler
+from message_handler import MessageHandler
 
 
 openai_client = OpenAI(api_key=configs.read(ConfigProperty.ApiKey))

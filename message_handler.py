@@ -34,7 +34,6 @@ class MessageHandler:
 
         # Adding right-to-left alignment characters
         translated_text = f"\u202B{translated_text}\u202C"
-
         if message.forward:
             original_sender = message.forward.sender
             original_sender_name = original_sender.username if original_sender else "Unknown"
