@@ -1,6 +1,7 @@
 import os
 import asyncio
-
+import time
+from collections import defaultdict
 import openai
 from telethon.extensions import html
 from telethon import types
@@ -13,45 +14,62 @@ class MessageHandler:
         self.client = client
         self.ai_client = ai_client
         self.target_channels = target_channels
+        self.grouped_messages = defaultdict(list)
+        self.grouped_files = defaultdict(list)
+        self.grouped_timestamp = {}
 
     async def handle_new_message(self, event):
         logger.log(Level.Debug, "handle_new_message running")
-
         message = event.message
+        media = []
+        translated_text = ""
+
         logger.log(Level.Debug, f'Got message, text is: {message.message}')
+        if message.grouped_id:
+            messages = await self.get_grouped_messages(message, message.grouped_id)
+            # No need to continue with all grouped messages
+            if len(messages) == 0:
+                return
 
-        # Extracting entities and formatted text
+            # If message text is empty, search through all grouped messages for text
+            if message.text.strip() == '':
+                for msg in self.grouped_messages[message.grouped_id]:
+                    if msg.text.strip() != '':
+                        message = msg
+
+            media = self.grouped_files.pop(message.grouped_id)
+        elif message.media:
+            media.append(await self.download_media(message))
+
         message_text = html.unparse(message.message, message.entities)
+        if message_text.strip() != '':
+            # Extracting code blocks
+            message_text, code_blocks = self.extract_code_blocks(message_text)
 
-        # Extracting code blocks
-        message_text, code_blocks = self.extract_code_blocks(message_text)
+            # Translate and rewrite text
+            translated_text = await self.translate_and_rewrite_text(message_text)
 
-        # Translate and rewrite text
-        translated_text = await self.translate_and_rewrite_text(message_text)
+            # Insert code blocks back into the translated text
+            translated_text = self.insert_code_blocks(translated_text, code_blocks)
 
-        # Insert code blocks back into the translated text
-        translated_text = self.insert_code_blocks(translated_text, code_blocks)
+            # Adding right-to-left alignment characters
+            translated_text = f"\u202B{translated_text}\u202C"
 
-        # Adding right-to-left alignment characters
-        translated_text = f"\u202B{translated_text}\u202C"
         if message.forward:
             original_sender = self.get_forward_name(message.forward)
             translated_text = f"Forwarded from {original_sender}: {translated_text}"
             logger.log(Level.Debug, f"Translated text: {translated_text}")
 
-        if message.media:
-            try:
-                file_path = await message.download_media()
-                extension = "jpg" if isinstance(message.media, types.MessageMediaPhoto) else ""
-                new_file_path = f"{file_path}.{extension}" if extension else file_path
-                logger.log(Level.Debug, f"Got media file: {new_file_path}")
-                os.rename(file_path, new_file_path)
-                for target in self.target_channels:
-                    sent = await self.client.send_file(target, new_file_path, caption=translated_text)
-                    logger.log(Level.Info, f"Media {sent.id} is sent to {target}")
-                os.remove(new_file_path)
-            except Exception as e:
-                logger.log(Level.Error, f"Error downloading or sending media: {e}")
+        if len(media) > 0:
+            for target in self.target_channels:
+                sent = await self.client.send_file(target, media, caption=translated_text)
+                logger.log(Level.Info, f"Message {sent[0].id} with {len(media)} media is sent to {target}")
+            for m in media:
+                try:
+                    os.remove(m)
+                except Exception as e:
+                    logger.log(Level.Error, f"Failed to delete file {m}: {e}")
+                    continue
         else:
             try:
                 for target in self.target_channels:
@@ -59,6 +77,7 @@ class MessageHandler:
                     logger.log(Level.Info, f"Message {sent.id} is sent to {target}")
             except Exception as e:
                 logger.log(Level.Error, f"Error occured: {e}")
+
         logger.log(Level.Debug, "Exiting handle_new_message")
 
     def get_forward_name(self, forward):
@@ -68,6 +87,51 @@ class MessageHandler:
         elif forward.channel_post > 0:
             sender = forward.chat.title
         return sender
+
+    async def grouped_messages_received(self, group_id):
+        await asyncio.sleep(1)
+        if time.time() - self.grouped_timestamp.get(group_id, 0) > 1:
+            return True
+        return False
+
+    async def download_media(self, message) -> str:
+        try:
+            file_path = await message.download_media()
+            # extension = "jpg" if isinstance(message.media, types.MessageMediaPhoto) else ""
+            new_file_path = f"assets/download/{file_path}"
+            logger.log(Level.Debug, f"Got media file: {new_file_path}")
+            os.rename(file_path, new_file_path)
+            return new_file_path
+        except Exception as e:
+            logger.log(Level.Error, f"Error downloading media: {e}")
+
+    async def get_grouped_messages(self, message, gid):
+        logger.log(Level.Debug, f'Got message with grouped id {gid}')
+        # Saving grouped message
+        self.grouped_messages[gid].append(message)
+        self.grouped_timestamp[gid] = time.time()
+
+        # Continue only with the first message
+        if message.id == self.grouped_messages[gid][0].id:
+            received = await self.grouped_messages_received(gid)
+            if not received:
+                received = await self.grouped_messages_received(gid)
+            if not received:
+                logger.log(Level.Error, f'Failed to receive all grouped messages.')
+
+            logger.log(Level.Debug, f'Got {len(self.grouped_messages[gid])} messages with the same grouped id')
+
+            # Download all media
+            messages = self.grouped_messages[gid]
+            download_task = [asyncio.create_task(self.download_media(msg)) for msg in messages if msg.media]
+            files = await asyncio.gather(*download_task)
+            self.grouped_files[gid] = [f for f in files]
+
+            # Cleaning and returning
+            self.grouped_timestamp.pop(gid)
+            return self.grouped_messages.pop(gid)
+        else:
+            return []
 
     def extract_code_blocks(self, text):
         import re

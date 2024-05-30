@@ -1,6 +1,6 @@
 import signal
 
-from telethon import TelegramClient, events
+import telethon
 from openai import OpenAI
 import asyncio
 from read_config import configs
@@ -25,11 +25,11 @@ openai_api_key = configs.read(ConfigProperty.ApiKey)
 async def main():
     stop_event = asyncio.Event()
 
-    async with TelegramClient('session_name', api_id, api_hash) as client:
+    async with telethon.TelegramClient('session_name', api_id, api_hash) as client:
         logger.log(LogLevel.Info, "Connected to Telegram Client")
         message_handler = MessageHandler(client, openai_client, [target_channel])
 
-        @client.on(events.NewMessage(chats=monitored_channels))
+        @client.on(telethon.events.NewMessage(chats=monitored_channels))
         async def handle_message(event):
             logger.log(LogLevel.Debug, "Got new message, processing")
             await message_handler.handle_new_message(event)
