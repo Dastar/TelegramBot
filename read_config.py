@@ -18,6 +18,7 @@ class Configs:
 
         if output.find(';') != -1:
             output = output.split(';')
+            output = [line for line in output if line.strip()]
         return output
 
 
