@@ -3,7 +3,7 @@ import asyncio
 
 import openai
 from telethon.extensions import html
-from telethon import TelegramClient, events, types
+from telethon import types
 from logger import logger, LogLevel as Level
 
 
@@ -35,9 +35,8 @@ class MessageHandler:
         # Adding right-to-left alignment characters
         translated_text = f"\u202B{translated_text}\u202C"
         if message.forward:
-            original_sender = message.forward.sender
-            original_sender_name = original_sender.username if original_sender else "Unknown"
-            translated_text = f"Forwarded from {original_sender_name}: {translated_text}"
+            original_sender = self.get_forward_name(message.forward)
+            translated_text = f"Forwarded from {original_sender}: {translated_text}"
             logger.log(Level.Debug, f"Translated text: {translated_text}")
 
         if message.media:
@@ -62,6 +61,14 @@ class MessageHandler:
                 logger.log(Level.Error, f"Error occured: {e}")
         logger.log(Level.Debug, "Exiting handle_new_message")
 
+    def get_forward_name(self, forward):
+        sender = 'Unknown'
+        if forward.sender:
+            sender = forward.sender.username
+        elif forward.channel_post > 0:
+            sender = forward.chat.title
+        return sender
+
     def extract_code_blocks(self, text):
         import re
         code_block_pattern = re.compile(r'```.*?```', re.DOTALL)
@@ -82,6 +89,7 @@ class MessageHandler:
         backoff_factor = 2
 
         while retry_count < max_retries:
+            error_message = '%%TRANSLATING FAILED%%'
             messages = [
                 {
                     "role": "system",

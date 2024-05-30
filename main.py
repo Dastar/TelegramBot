@@ -1,11 +1,8 @@
 import signal
 
-from telethon import TelegramClient, events, types
+from telethon import TelegramClient, events
 from openai import OpenAI
-import openai
-import os
 import asyncio
-from telethon.extensions import html
 from read_config import configs
 from enums import ConfigProperty
 from logger import logger, LogLevel
