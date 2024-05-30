@@ -10,7 +10,7 @@ from logger import logger, LogLevel as Level
 from message_handler import handle_new_message
 
 
-client = OpenAI(api_key=configs.read(ConfigProperty.ApiKey))
+openai_client = OpenAI(api_key=configs.read(ConfigProperty.ApiKey))
 
 api_id = configs.read(ConfigProperty.ApiId)
 api_hash = configs.read(ConfigProperty.ApiHash)
@@ -30,7 +30,7 @@ async def main():
         @client.on(events.NewMessage(chats=monitored_channels))
         async def handle_message(event):
             logger.log(Level.Debug, "Got new message, processing")
-            await handle_new_message(event, client)
+            await handle_new_message(event, client, openai_client, target_channel)
 
         try:
             # Start the client
@@ -46,7 +46,7 @@ async def main():
                 await client.disconnect()
                 logger.log(Level.Info, 'Client disconnected successfully')
             else:
-                logger.log(Level.Info, 'Client was not connected')
+                logger.log(Level.Info, 'Client is not connected')
 
 if __name__ == '__main__':
     asyncio.run(main())

@@ -7,7 +7,7 @@ from telethon import TelegramClient, events, types
 from logger import logger, LogLevel as Level
 
 
-async def handle_new_message(event, client, target_channel):
+async def handle_new_message(event, client, ai_client, target_channel):
     logger.log(Level.Debug, "handle_new_message running")
 
     message = event.message
@@ -33,7 +33,7 @@ async def handle_new_message(event, client, target_channel):
     message_text, code_blocks = extract_code_blocks(message_text)
 
     # Translate and rewrite text
-    translated_text = await translate_and_rewrite_text(message_text, client)
+    translated_text = await translate_and_rewrite_text(message_text, ai_client)
 
     # Insert code blocks back into the translated text
     translated_text = insert_code_blocks(translated_text, code_blocks)
@@ -59,10 +59,15 @@ async def handle_new_message(event, client, target_channel):
         except Exception as e:
             logger.log(Level.Error, f"Error downloading or sending media: {e}")
     else:
-        await client.send_message(target_channel, translated_text, parse_mode='html')
+        try:
+            sent = await client.send_message(target_channel, translated_text, parse_mode='html')
+            logger.log(Level.Info, f"Message {sent.id} is sent")
+        except Exception as e:
+            logger.log(Level.Error, f"Error occured: {e}")
+    logger.log(Level.Debug, "Exiting handle_new_message")
 
 
-async def translate_and_rewrite_text(text, client):
+async def translate_and_rewrite_text(text, ai_client):
     logger.log(Level.Debug, "translate_and_rewrite_text running")
     retry_count = 0
     max_retries = 5
@@ -84,8 +89,9 @@ async def translate_and_rewrite_text(text, client):
         ]
 
         try:
-            response = client.chat.completions.create(model="gpt-3.5-turbo", messages=messages)
+            response = ai_client.chat.completions.create(model="gpt-3.5-turbo", messages=messages)
             content = response.choices[0].message.content.strip()
+            logger.log(Level.Debug, "Got translated message, proceeding")
             return content
         except openai.RateLimitError as e:
             retry_count += 1
