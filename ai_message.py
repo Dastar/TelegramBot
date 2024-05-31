@@ -2,7 +2,7 @@ import re
 
 
 class AIMessage:
-    def __init__(self, role:str, content:str):
+    def __init__(self, role: str, content: str):
         self.role = role
         self.content = content
         # self.tags = re.findall(r'%%.*?%%', content)

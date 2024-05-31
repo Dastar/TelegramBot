@@ -8,7 +8,10 @@ from enums import ConfigProperty
 from logger import logger, LogLevel
 from message_handler import MessageHandler
 from ai_client import AIClient
-
+from simple_client import SimpleClient
+from tasks.message_generator import MessageGenerator
+from tasks.task import Task
+from tasks.task_runner import TaskRunner
 
 openai_client = OpenAI(api_key=configs.read(ConfigProperty.ApiKey))
 aiclient = AIClient(openai_client, language='Hebrew', model="gpt-4o")
@@ -28,6 +31,8 @@ target_channel = configs.read(ConfigProperty.TargetChannel)
 
 # Initialize OpenAI API
 openai_api_key = configs.read(ConfigProperty.ApiKey)
+
+tasks = TaskRunner()
 
 
 async def main():
@@ -57,6 +62,12 @@ async def main():
             # Start the client
             await client.start()
             logger.log(LogLevel.Info, 'Client started successfully')
+            task = MessageGenerator(60, AIClient(openai_client), SimpleClient(client, 'md'), [target_channel])
+            task.create_role()
+            task.last_played -= 55
+            tasks.add_task("Basic Task", task)
+            tasks.event_stopper = stop_event
+            await asyncio.create_task(tasks.run())
 
             # Wait until the stop event is set
             await stop_event.wait()

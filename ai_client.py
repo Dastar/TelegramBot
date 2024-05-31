@@ -9,7 +9,7 @@ def format_content(content: str, tag, text):
 
 
 class AIClient:
-    def __init__(self, client: openai.OpenAI, language, model="gpt-3.5-turbo"):
+    def __init__(self, client: openai.OpenAI, language="English", model="gpt-3.5-turbo"):
         self.client = client
         self.messages = []
         self.outputLanguage = language
@@ -21,7 +21,7 @@ class AIClient:
         self.messages.append(message)
 
     def remove_role(self, role):
-        self.messages = [message for message in self.messages if message['role'] != role]
+        self.messages = [message for message in self.messages if message.role != role]
 
     async def run_model(self, text):
         logger.log(LogLevel.Debug, "run_model running")
