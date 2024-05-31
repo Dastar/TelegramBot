@@ -168,7 +168,7 @@ class MessageHandler:
             ]
 
             try:
-                response = self.ai_client.chat.completions.create(model="gpt-3.5-turbo", messages=messages)
+                response = self.ai_client.chat.completions.create(model="gpt-4o", messages=messages)
                 content = response.choices[0].message.content.strip()
                 logger.log(Level.Debug, "Got translated message, proceeding")
                 return content
