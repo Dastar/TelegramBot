@@ -3,9 +3,10 @@ import asyncio
 import time
 from collections import defaultdict
 import openai
-from telethon.extensions import html
+from telethon.extensions import markdown
 from telethon import types
 from logger import logger, LogLevel as Level
+
 
 class MessageHandler:
     def __init__(self, client, ai_client, target_channels):
@@ -25,6 +26,7 @@ class MessageHandler:
 
         logger.log(Level.Debug, f'Got message, text is: {message.message}')
         if message.grouped_id:
+            logger.log(Level.Debug, f'Got grouped message')
             messages = await self.get_grouped_messages(message, message.grouped_id)
             # No need to continue with all grouped messages
             if len(messages) == 0:
@@ -38,12 +40,14 @@ class MessageHandler:
 
             media = self.grouped_files.pop(message.grouped_id, [])
         elif message.media:
+            logger.log(Level.Debug, f'Got message with media')
             downloaded_media = await self.download_media(message)
             if downloaded_media:
                 media.append(downloaded_media)
 
-        message_text = html.unparse(message.message, message.entities)
+        message_text = markdown.unparse(message.message, message.entities)
         if message_text.strip() != '':
+            logger.log(Level.Debug, f'Got message with text')
             # Extracting code blocks
             message_text, code_blocks = self.extract_code_blocks(message_text)
 
@@ -57,9 +61,11 @@ class MessageHandler:
             translated_text = f"\u202B{translated_text}\u202C"
 
         if message.forward:
+            logger.log(Level.Debug, f'Got forwarded message')
             original_sender = self.get_forward_name(message.forward)
             translated_text = f"Forwarded from {original_sender}: {translated_text}"
-            logger.log(Level.Debug, f"Translated text: {translated_text}")
+
+        logger.log(Level.Debug, f"Translated text: {translated_text}")
 
         if media:
             for target in self.target_channels:
@@ -77,7 +83,7 @@ class MessageHandler:
         else:
             try:
                 for target in self.target_channels:
-                    sent = await self.client.send_message(target, translated_text, parse_mode='html')
+                    sent = await self.client.send_message(target, translated_text, parse_mode='md')
                     logger.log(Level.Info, f"Message {sent.id} is sent to {target}")
             except Exception as e:
                 logger.log(Level.Error, f"Error occurred: {e}")
@@ -98,7 +104,7 @@ class MessageHandler:
             return True
         return False
 
-    async def download_media(self, message) -> str:
+    async def download_media(self, message) -> str | None:
         try:
             file_path = await message.download_media()
             if file_path and os.path.exists(file_path):
@@ -114,7 +120,7 @@ class MessageHandler:
             logger.log(Level.Error, f"Error downloading media: {e}")
             return None
 
-    async def get_grouped_messages(self, message, gid):
+    async def get_grouped_messages(self, message, gid) -> list:
         logger.log(Level.Debug, f'Got message with grouped id {gid}')
         # Saving grouped message
         self.grouped_messages[gid].append(message)
