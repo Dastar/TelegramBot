@@ -1,197 +1,71 @@
-import os
+import signal
+
+import telethon
+from openai import OpenAI
 import asyncio
-import time
-from collections import defaultdict
-import openai
-from telethon.extensions import html
-from telethon import types
-from logger import logger, LogLevel as Level
+from read_config import configs
+from enums import ConfigProperty
+from logger import logger, LogLevel
+from message_handler import MessageHandler
 
-class MessageHandler:
-    def __init__(self, client, ai_client, target_channels):
-        logger.log(Level.Debug, f"Creating Message Handler. Target channels: {target_channels}")
-        self.client = client
-        self.ai_client = ai_client
-        self.target_channels = target_channels
-        self.grouped_messages = defaultdict(list)
-        self.grouped_files = defaultdict(list)
-        self.grouped_timestamp = {}
 
-    async def handle_new_message(self, event):
-        logger.log(Level.Debug, "handle_new_message running")
-        message = event.message
-        media = []
-        translated_text = ""
+openai_client = OpenAI(api_key=configs.read(ConfigProperty.ApiKey))
 
-        logger.log(Level.Debug, f'Got message, text is: {message.message}')
-        if message.grouped_id:
-            messages = await self.get_grouped_messages(message, message.grouped_id)
-            # No need to continue with all grouped messages
-            if len(messages) == 0:
-                return
+api_id = configs.read(ConfigProperty.ApiId)
+api_hash = configs.read(ConfigProperty.ApiHash)
 
-            # If message text is empty, search through all grouped messages for text
-            if message.text.strip() == '':
-                for msg in self.grouped_messages[message.grouped_id]:
-                    if msg.text.strip() != '':
-                        message = msg
+# Replace with your channel usernames or IDs
+monitored_channels = configs.read(ConfigProperty.MonitoredChannels)
+target_channel = configs.read(ConfigProperty.TargetChannel)
 
-            media = self.grouped_files.pop(message.grouped_id, [])
-        elif message.media:
-            downloaded_media = await self.download_media(message)
-            if downloaded_media:
-                media.append(downloaded_media)
+# Initialize OpenAI API
+openai_api_key = configs.read(ConfigProperty.ApiKey)
 
-        message_text = html.unparse(message.message, message.entities)
-        if message_text.strip() != '':
-            # Extracting code blocks
-            message_text, code_blocks = self.extract_code_blocks(message_text)
 
-            # Translate and rewrite text
-            translated_text = await self.translate_and_rewrite_text(message_text)
+async def main():
+    stop_event = asyncio.Event()
 
-            # Insert code blocks back into the translated text
-            translated_text = self.insert_code_blocks(translated_text, code_blocks)
+    async with telethon.TelegramClient('session_name', api_id, api_hash) as client:
+        logger.log(LogLevel.Info, "Connected to Telegram Client")
+        message_handler = MessageHandler(client, openai_client, [target_channel])
 
-            # Adding right-to-left alignment characters
-            translated_text = f"\u202B{translated_text}\u202C"
+        @client.on(telethon.events.NewMessage(chats=monitored_channels))
+        async def handle_message(event):
+            logger.log(LogLevel.Debug, "Got new message, processing")
+            await message_handler.handle_new_message(event)
 
-        if message.forward:
-            original_sender = self.get_forward_name(message.forward)
-            translated_text = f"Forwarded from {original_sender}: {translated_text}"
-            logger.log(Level.Debug, f"Translated text: {translated_text}")
+        # Function to handle termination signals
+        def signal_handler():
+            logger.log(LogLevel.Info, 'Received termination signal, exiting...')
+            stop_event.set()
 
-        if media:
-            for target in self.target_channels:
-                try:
-                    sent = await self.client.send_file(target, media, caption=translated_text)
-                    logger.log(Level.Info, f"Message {sent[0].id} with {len(media)} media is sent to {target}")
-                except Exception as e:
-                    logger.log(Level.Error, f"Error sending media to {target}: {e}")
-                for m in media:
-                    try:
-                        if m:
-                            os.remove(m)
-                    except Exception as e:
-                        logger.log(Level.Error, f"Failed to delete file {m}: {e}")
-        else:
-            try:
-                for target in self.target_channels:
-                    sent = await self.client.send_message(target, translated_text, parse_mode='html')
-                    logger.log(Level.Info, f"Message {sent.id} is sent to {target}")
-            except Exception as e:
-                logger.log(Level.Error, f"Error occurred: {e}")
+        loop = asyncio.get_running_loop()
 
-        logger.log(Level.Debug, "Exiting handle_new_message")
+        # Register signal handlers
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            loop.add_signal_handler(sig, signal_handler)
 
-    def get_forward_name(self, forward):
-        sender = 'Unknown'
-        if forward.sender:
-            sender = forward.sender.username
-        elif forward.channel_post > 0:
-            sender = forward.chat.title
-        return sender
-
-    async def grouped_messages_received(self, group_id):
-        await asyncio.sleep(1)
-        if time.time() - self.grouped_timestamp.get(group_id, 0) > 1:
-            return True
-        return False
-
-    async def download_media(self, message) -> str:
         try:
-            file_path = await message.download_media()
-            if file_path and os.path.exists(file_path):
-                new_file_path = os.path.join("assets/download", file_path)
-                logger.log(Level.Debug, f"Got media file: {new_file_path}")
-                os.makedirs(os.path.dirname(new_file_path), exist_ok=True)
-                os.rename(file_path, new_file_path)
-                return new_file_path
-            else:
-                logger.log(Level.Error, f"File path does not exist: {file_path}")
-                return None
+            # Start the client
+            await client.start()
+            logger.log(LogLevel.Info, 'Client started successfully')
+
+            # Wait until the stop event is set
+            await stop_event.wait()
+
+            logger.log(LogLevel.Info, 'Stop event received, shutting down...')
         except Exception as e:
-            logger.log(Level.Error, f"Error downloading media: {e}")
-            return None
+            logger.log(LogLevel.Error, f'An error occurred: {e}')
+        finally:
+            if client.is_connected():
+                await client.disconnect()
+                logger.log(LogLevel.Info, 'Client disconnected successfully')
+            else:
+                logger.log(LogLevel.Info, 'Client is not connected')
 
-    async def get_grouped_messages(self, message, gid):
-        logger.log(Level.Debug, f'Got message with grouped id {gid}')
-        # Saving grouped message
-        self.grouped_messages[gid].append(message)
-        self.grouped_timestamp[gid] = time.time()
 
-        # Continue only with the first message
-        if message.id == self.grouped_messages[gid][0].id:
-            received = await self.grouped_messages_received(gid)
-            if not received:
-                received = await self.grouped_messages_received(gid)
-            if not received:
-                logger.log(Level.Error, f'Failed to receive all grouped messages.')
-
-            logger.log(Level.Debug, f'Got {len(self.grouped_messages[gid])} messages with the same grouped id')
-
-            # Download all media
-            messages = self.grouped_messages[gid]
-            download_task = [asyncio.create_task(self.download_media(msg)) for msg in messages if msg.media]
-            files = await asyncio.gather(*download_task)
-            self.grouped_files[gid] = [f for f in files if f is not None]
-
-            # Cleaning and returning
-            self.grouped_timestamp.pop(gid)
-            return self.grouped_messages.pop(gid)
-        else:
-            return []
-
-    def extract_code_blocks(self, text):
-        import re
-        code_block_pattern = re.compile(r'```.*?```', re.DOTALL)
-        code_blocks = code_block_pattern.findall(text)
-        for i, block in enumerate(code_blocks):
-            text = text.replace(block, f"[CODE_BLOCK_{i}]")
-        return text, code_blocks
-
-    def insert_code_blocks(self, text, code_blocks):
-        for i, block in enumerate(code_blocks):
-            text = text.replace(f"[CODE_BLOCK_{i}]", block)
-        return text
-
-    async def translate_and_rewrite_text(self, text):
-        logger.log(Level.Debug, "translate_and_rewrite_text running")
-        retry_count = 0
-        max_retries = 5
-        backoff_factor = 2
-
-        while retry_count < max_retries:
-            error_message = '%%TRANSLATING FAILED%%'
-            messages = [
-                {
-                    "role": "system",
-                    "content": "You are a translator and rewriter."
-                },
-                {
-                    "role": "user",
-                    "content": f"This GPT is a tech writer and Hebrew language professional, tasked with translating "
-                               f"every message received into Hebrew and rewriting it to fit the best manner for a tech "
-                               f"blog format on Telegram. The GPT translate and rewrite and will return only a final "
-                               f"version of the text of the actual message. this GPT will not translate the code blocks:\n\n{text}"
-                }
-            ]
-
-            try:
-                response = self.ai_client.chat.completions.create(model="gpt-3.5-turbo", messages=messages)
-                content = response.choices[0].message.content.strip()
-                logger.log(Level.Debug, "Got translated message, proceeding")
-                return content
-            except openai.RateLimitError as e:
-                retry_count += 1
-                wait_time = backoff_factor ** retry_count
-                logger.log(Level.Warning, f"Rate limit exceeded. Retrying in {wait_time} seconds...")
-                await asyncio.sleep(wait_time)
-            except openai.OpenAIError as e:
-                logger.log(Level.Error, f"An OpenAI error occurred: {e}")
-                break
-            except Exception as e:
-                logger.log(Level.Error, f"An unexpected error occurred: {e}")
-                break
-
-        raise Exception("Max retries exceeded for OpenAI API request")
+if __name__ == '__main__':
+    try:
+        asyncio.run(main())
+    finally:
+        logger.log(LogLevel.Info, 'Event loop closed')
