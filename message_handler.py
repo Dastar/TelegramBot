@@ -4,14 +4,15 @@ import time
 from collections import defaultdict
 import openai
 from telethon.extensions import markdown
-from telethon import types
+from telethon import types, errors
+from simple_client import SimpleClient
 from logger import logger, LogLevel as Level
 
 
 class MessageHandler:
     def __init__(self, client, ai_client, target_channels):
         logger.log(Level.Debug, f"Creating Message Handler. Target channels: {target_channels}")
-        self.client = client
+        self.client = SimpleClient(client, 'md')
         self.ai_client = ai_client
         self.target_channels = target_channels
         self.grouped_messages = defaultdict(list)
@@ -67,26 +68,8 @@ class MessageHandler:
 
         logger.log(Level.Debug, f"Translated text: {translated_text}")
 
-        if media:
-            for target in self.target_channels:
-                try:
-                    sent = await self.client.send_file(target, media, caption=translated_text)
-                    logger.log(Level.Info, f"Message {sent[0].id} with {len(media)} media is sent to {target}")
-                except Exception as e:
-                    logger.log(Level.Error, f"Error sending media to {target}: {e}")
-                for m in media:
-                    try:
-                        if m:
-                            os.remove(m)
-                    except Exception as e:
-                        logger.log(Level.Error, f"Failed to delete file {m}: {e}")
-        else:
-            try:
-                for target in self.target_channels:
-                    sent = await self.client.send_message(target, translated_text, parse_mode='md')
-                    logger.log(Level.Info, f"Message {sent.id} is sent to {target}")
-            except Exception as e:
-                logger.log(Level.Error, f"Error occurred: {e}")
+        for target in self.target_channels:
+            await self.client.send(target, translated_text, media)
 
         logger.log(Level.Debug, "Exiting handle_new_message")
 
