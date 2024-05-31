@@ -21,7 +21,7 @@ class SimpleClient:
                 status = await self._send_media(target, media)
                 status = await self._send_message(target, message)
         else:
-            status = self._send_message(target, message)
+            status = await self._send_message(target, message)
 
     async def _send_media(self, target, media, message="") -> Status:
         try:
