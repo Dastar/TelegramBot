@@ -64,12 +64,14 @@ class MessageHandler:
         if message.forward:
             logger.log(Level.Debug, f'Got forwarded message')
             original_sender = self.get_forward_name(message.forward)
-            translated_text = f"Forwarded from {original_sender}: {translated_text}"
+            translated_text = f"Forwarded from {original_sender}:\n\n {translated_text}"
 
         logger.log(Level.Debug, f"Translated text: {translated_text}")
 
         for target in self.target_channels:
             await self.client.send(target, translated_text, media)
+        for m in media:
+            os.remove(m)
 
         logger.log(Level.Debug, "Exiting handle_new_message")
 
@@ -151,7 +153,6 @@ class MessageHandler:
         backoff_factor = 2
 
         while retry_count < max_retries:
-            error_message = '%%TRANSLATING FAILED%%'
             messages = [
                 {
                     "role": "system",
