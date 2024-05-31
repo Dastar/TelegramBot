@@ -7,7 +7,6 @@ from telethon.extensions import html
 from telethon import types
 from logger import logger, LogLevel as Level
 
-
 class MessageHandler:
     def __init__(self, client, ai_client, target_channels):
         logger.log(Level.Debug, f"Creating Message Handler. Target channels: {target_channels}")
@@ -37,9 +36,11 @@ class MessageHandler:
                     if msg.text.strip() != '':
                         message = msg
 
-            media = self.grouped_files.pop(message.grouped_id)
+            media = self.grouped_files.pop(message.grouped_id, [])
         elif message.media:
-            media.append(await self.download_media(message))
+            downloaded_media = await self.download_media(message)
+            if downloaded_media:
+                media.append(downloaded_media)
 
         message_text = html.unparse(message.message, message.entities)
         if message_text.strip() != '':
@@ -60,23 +61,26 @@ class MessageHandler:
             translated_text = f"Forwarded from {original_sender}: {translated_text}"
             logger.log(Level.Debug, f"Translated text: {translated_text}")
 
-        if len(media) > 0:
+        if media:
             for target in self.target_channels:
-                sent = await self.client.send_file(target, media, caption=translated_text)
-                logger.log(Level.Info, f"Message {sent[0].id} with {len(media)} media is sent to {target}")
-            for m in media:
                 try:
-                    os.remove(m)
+                    sent = await self.client.send_file(target, media, caption=translated_text)
+                    logger.log(Level.Info, f"Message {sent[0].id} with {len(media)} media is sent to {target}")
                 except Exception as e:
-                    logger.log(Level.Error, f"Failed to delete file {m}: {e}")
-                    continue
+                    logger.log(Level.Error, f"Error sending media to {target}: {e}")
+                for m in media:
+                    try:
+                        if m:
+                            os.remove(m)
+                    except Exception as e:
+                        logger.log(Level.Error, f"Failed to delete file {m}: {e}")
         else:
             try:
                 for target in self.target_channels:
                     sent = await self.client.send_message(target, translated_text, parse_mode='html')
                     logger.log(Level.Info, f"Message {sent.id} is sent to {target}")
             except Exception as e:
-                logger.log(Level.Error, f"Error occured: {e}")
+                logger.log(Level.Error, f"Error occurred: {e}")
 
         logger.log(Level.Debug, "Exiting handle_new_message")
 
@@ -97,13 +101,18 @@ class MessageHandler:
     async def download_media(self, message) -> str:
         try:
             file_path = await message.download_media()
-            # extension = "jpg" if isinstance(message.media, types.MessageMediaPhoto) else ""
-            new_file_path = f"assets/download/{file_path}"
-            logger.log(Level.Debug, f"Got media file: {new_file_path}")
-            os.rename(file_path, new_file_path)
-            return new_file_path
+            if file_path and os.path.exists(file_path):
+                new_file_path = os.path.join("assets/download", file_path)
+                logger.log(Level.Debug, f"Got media file: {new_file_path}")
+                os.makedirs(os.path.dirname(new_file_path), exist_ok=True)
+                os.rename(file_path, new_file_path)
+                return new_file_path
+            else:
+                logger.log(Level.Error, f"File path does not exist: {file_path}")
+                return None
         except Exception as e:
             logger.log(Level.Error, f"Error downloading media: {e}")
+            return None
 
     async def get_grouped_messages(self, message, gid):
         logger.log(Level.Debug, f'Got message with grouped id {gid}')
@@ -125,7 +134,7 @@ class MessageHandler:
             messages = self.grouped_messages[gid]
             download_task = [asyncio.create_task(self.download_media(msg)) for msg in messages if msg.media]
             files = await asyncio.gather(*download_task)
-            self.grouped_files[gid] = [f for f in files]
+            self.grouped_files[gid] = [f for f in files if f is not None]
 
             # Cleaning and returning
             self.grouped_timestamp.pop(gid)
@@ -164,7 +173,7 @@ class MessageHandler:
                     "content": f"This GPT is a tech writer and Hebrew language professional, tasked with translating "
                                f"every message received into Hebrew and rewriting it to fit the best manner for a tech "
                                f"blog format on Telegram. The GPT translate and rewrite and will return only a final "
-                               f"version of the text of the actual message:\n\n{text}"
+                               f"version of the text of the actual message. this GPT will not translate the code blocks:\n\n{text}"
                 }
             ]
 
