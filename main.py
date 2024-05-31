@@ -7,9 +7,17 @@ from read_config import configs
 from enums import ConfigProperty
 from logger import logger, LogLevel
 from message_handler import MessageHandler
+from ai_client import AIClient
 
 
 openai_client = OpenAI(api_key=configs.read(ConfigProperty.ApiKey))
+aiclient = AIClient(openai_client, language='Hebrew', model="gpt-4o")
+aiclient.add_role("system", content="You are a translator and rewriter.")
+content = (f"This GPT is a tech writer and %%LANGUAGE%% language professional, tasked with translating "
+           f"every message received into Hebrew and rewriting it to fit the best manner for a tech "
+           f"blog format on Telegram. The GPT translate and rewrite and will return only a final "
+           f"version of the text of the actual message. this GPT will not translate the code blocks:\n\n%%TEXT%%")
+aiclient.add_role("user", content=content)
 
 api_id = configs.read(ConfigProperty.ApiId)
 api_hash = configs.read(ConfigProperty.ApiHash)
@@ -27,7 +35,7 @@ async def main():
 
     async with telethon.TelegramClient('session_name', api_id, api_hash) as client:
         logger.log(LogLevel.Info, "Connected to Telegram Client")
-        message_handler = MessageHandler(client, openai_client, [target_channel])
+        message_handler = MessageHandler(client, aiclient, [target_channel])
 
         @client.on(telethon.events.NewMessage(chats=monitored_channels))
         async def handle_message(event):

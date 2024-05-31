@@ -7,6 +7,7 @@ from telethon.extensions import markdown
 from telethon import types, errors
 from simple_client import SimpleClient
 from logger import logger, LogLevel as Level
+from ai_client import AIClient
 
 
 class MessageHandler:
@@ -53,7 +54,7 @@ class MessageHandler:
             message_text, code_blocks = self.extract_code_blocks(message_text)
 
             # Translate and rewrite text
-            translated_text = await self.translate_and_rewrite_text(message_text)
+            translated_text = await self.ai_client.run_model(message_text)
 
             # Insert code blocks back into the translated text
             translated_text = self.insert_code_blocks(translated_text, code_blocks)
@@ -146,42 +147,3 @@ class MessageHandler:
             text = text.replace(f"[CODE_BLOCK_{i}]", block)
         return text
 
-    async def translate_and_rewrite_text(self, text):
-        logger.log(Level.Debug, "translate_and_rewrite_text running")
-        retry_count = 0
-        max_retries = 5
-        backoff_factor = 2
-
-        while retry_count < max_retries:
-            messages = [
-                {
-                    "role": "system",
-                    "content": "You are a translator and rewriter."
-                },
-                {
-                    "role": "user",
-                    "content": f"This GPT is a tech writer and Hebrew language professional, tasked with translating "
-                               f"every message received into Hebrew and rewriting it to fit the best manner for a tech "
-                               f"blog format on Telegram. The GPT translate and rewrite and will return only a final "
-                               f"version of the text of the actual message. this GPT will not translate the code blocks:\n\n{text}"
-                }
-            ]
-
-            try:
-                response = self.ai_client.chat.completions.create(model="gpt-4o", messages=messages)
-                content = response.choices[0].message.content.strip()
-                logger.log(Level.Debug, "Got translated message, proceeding")
-                return content
-            except openai.RateLimitError as e:
-                retry_count += 1
-                wait_time = backoff_factor ** retry_count
-                logger.log(Level.Warning, f"Rate limit exceeded. Retrying in {wait_time} seconds...")
-                await asyncio.sleep(wait_time)
-            except openai.OpenAIError as e:
-                logger.log(Level.Error, f"An OpenAI error occurred: {e}")
-                break
-            except Exception as e:
-                logger.log(Level.Error, f"An unexpected error occurred: {e}")
-                break
-
-        raise Exception("Max retries exceeded for OpenAI API request")
