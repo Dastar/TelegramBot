@@ -1,4 +1,7 @@
 import asyncio
+import time
+from urllib import request
+import aiohttp
 import openai
 from logger import logger, LogLevel
 from ai_message import AIMessage
@@ -52,5 +55,37 @@ class AIClient:
                 break
 
         raise Exception("Max retries exceeded for OpenAI API request")
+
+    async def generate_image2(self, text):
+        logger.log(LogLevel.Debug, f"Generating Image")
+        response = openai.images.generate(prompt=text, n=1, size="1024x1024", model="dall-e-3")
+        image_url = response['data'][0]['url']
+        img = request.get(image_url)
+        if img.status_code == 200:
+            with open(f'assets/download/aiimage{time.time()}.png') as file:
+                file.write(img.content)
+            return f'assets/download/aiimage{time.time()}.png'
+        return ''
+
+    async def generate_image(self, text):
+        logger.log(LogLevel.Debug, "Generating Image")
+        try:
+            response = openai.images.generate(prompt=text, n=1, size="1024x1024", model="dall-e-3")
+            image_url = response.data[0].url
+            logger.log(LogLevel.Debug, f'Image url: {image_url}')
+            async with aiohttp.ClientSession() as session:
+                async with session.get(image_url) as img_response:
+                    if img_response.status == 200:
+                        image_path = f'assets/download/aiimage{time.time()}.png'
+                        with open(image_path, 'wb') as file:
+                            file.write(await img_response.read())
+                        return image_path
+                    else:
+                        logger.log(LogLevel.Error, f"Failed to download image, status code: {img_response.status}")
+                        return ''
+        except Exception as e:
+            logger.log(LogLevel.Error, f"An error occurred while generating the image: {e}")
+            return ''
+
 
 
