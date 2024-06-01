@@ -48,7 +48,13 @@ class MessageHandler:
                 media.append(downloaded_media)
 
         message_text = markdown.unparse(message.message, message.entities)
-        if message_text.strip() != '':
+        if message_text.startswith('/command: generate image'):
+            message_text = message_text[len('/command: '):]
+            img = await self.ai_client.generate_image(message_text)
+            if img.strip():
+                media.append(img)
+
+        elif message_text.strip() != '':
             logger.log(Level.Debug, f'Got message with text')
             # Extracting code blocks
             message_text, code_blocks = self.extract_code_blocks(message_text)
