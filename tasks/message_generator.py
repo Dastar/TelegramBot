@@ -4,28 +4,29 @@ from tasks.task import Task
 
 
 class MessageGenerator(Task):
-    def __init__(self, delay, ai: ai_client.AIClient, tg_client: simple_client.SimpleClient, targets):
+    def __init__(self, delay, ai: ai_client.AIClient, targets):
         super().__init__(delay)
         self.ai_client = ai
-        self.tg_client = tg_client
         self.targets = targets
 
     def create_role(self):
-        self.ai_client.add_role("system", content="You are a speech motivator")
-        self.ai_client.add_role("user", content="This GPT is a speech motivator, knows a little about a log of thinks and can speak about everything."
-                                                "The GPT will generate a small speech about 300 character about some of the things it thinks interesting right now."
-                                                "The GPT will respond only with the speech, nothing else should be in the responde.")
+        self.ai_client.add_role("system", content="You are a software engineer and blogger")
+        self.ai_client.add_role("user",
+                                content="This GPT is a software engineer and a blogger. This GPT knows everything "
+                                        "about writing good and trusted software. This GPT is writing a blog about "
+                                        "algorithms. This GPT will write a post in his blog about little known algorithms, "
+                                        "each time only one, no more than 40 lines of code. It will give "
+                                        "little explanation about the generated code. The explanations should be "
+                                        "for people with some experience in programming. The GPT will only response "
+                                        "with the code and explanations, nothing else should be in the response."
+                                        " Output only the actual answer.")
 
-    async def run(self):
-        if not await super().run():
-            return False
-
+    async def run(self, client):
         message = await self.ai_client.run_model("")
         if message:
             for target in self.targets:
-                await self.tg_client.send(target, message)
+                await client.send(target, message)
 
-        return True
 
 
 
