@@ -10,11 +10,11 @@ class Configs:
     def open(self):
         self.config.read(self.file)
 
-    def read(self, property):
+    def read(self, property_name):
         try:
-            output = self.config[self.title][property]
-        except:
-            raise Exception(f"No property with name {property} in configuration file")
+            output = self.config[self.title][property_name]
+        except Exception:
+            raise Exception(f"No property with name {property_name} in configuration file")
 
         if output.find(';') != -1:
             output = output.split(';')

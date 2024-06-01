@@ -12,6 +12,7 @@ from simple_client import SimpleClient
 from tasks.message_generator import MessageGenerator
 from tasks.task_runner import TaskRunner
 
+# configs.title = "ALGO"
 openai_client = OpenAI(api_key=configs.read(ConfigProperty.ApiKey))
 aiclient = AIClient(openai_client, language='Hebrew', model="gpt-4o")
 aiclient.add_role("system", content="You are a translator and rewriter.")
@@ -62,7 +63,7 @@ async def main():
             # Start the client
             await client.start()
             logger.log(LogLevel.Info, 'Client started successfully')
-            task = MessageGenerator(60, AIClient(openai_client), [target_channel])
+            task = MessageGenerator(AIClient(openai_client), [target_channel])
             task.create_role()
             task_runner.add_task(task, 60)
             task_runner.tg_client = SimpleClient(client, 'md')
