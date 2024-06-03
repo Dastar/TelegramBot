@@ -18,7 +18,7 @@ aiclient.add_role("system", content="You are a translator and rewriter.")
 content = (f"This GPT is a tech writer and %%LANGUAGE%% language professional, tasked with translating "
            f"every message received into Hebrew and rewriting it to fit the best manner for a tech "
            f"blog format on Telegram. The GPT translate and rewrite and will return only a final "
-           f"version of the text of the actual message. This GPT will add an English hashtag and %%LANGUAGE%% hashtag for every message. This GPT will translate every mentioned russian currency to the current currency of the %%LANGUAGE%%. This GPT will not translate the code blocks:\n\n%%TEXT%%")
+           f"version of the text of the actual message. This GPT will add an English hashtag and %%LANGUAGE%% hashtag for every message. This GPT will convert every mentioned russian currency (rub) to the exact currency of the %%LANGUAGE%%  based on real-time rates at this moment, and return only converted currency. This GPT will check the text for credibility and make it as close as possible to meaning of the original.This GPT will not translate the code blocks:\n\n%%TEXT%%")
 aiclient.add_role("user", content=content)
 
 api_id = configs.read(ConfigProperty.ApiId)
