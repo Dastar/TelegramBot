@@ -7,7 +7,7 @@ from telethon.extensions import markdown
 from telethon import types, errors
 from simple_client import SimpleClient
 from logger import logger, LogLevel as Level
-from ai_client import AIClient
+from ai_client.ai_client import AIClient
 
 
 class MessageHandler:
@@ -48,11 +48,20 @@ class MessageHandler:
                 media.append(downloaded_media)
 
         message_text = markdown.unparse(message.message, message.entities)
-        if message_text.startswith('/command: generate image'):
+        if message_text.startswith('/command:'):
             message_text = message_text[len('/command: '):]
-            img = await self.ai_client.generate_image(message_text)
-            if img.strip():
-                media.append(img)
+            if message_text.startswith('generate image'):
+                img = await self.ai_client.generate_image(message_text)
+                if img.strip():
+                    media.append(img)
+            elif message_text.startswith('reload role'):
+                self.ai_client.reload_reader('ai_client/roles/role.yaml')
+                self.ai_client.add_role('main')
+                return
+            elif message_text.startswith('role'):
+                message_text = message_text[len('role '):]
+                self.ai_client.add_role(message_text)
+                return
 
         elif message_text.strip() != '':
             logger.log(Level.Debug, f'Got message with text')
