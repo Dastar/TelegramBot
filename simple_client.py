@@ -1,6 +1,7 @@
 import telethon
 from logger import logger, LogLevel
 from enums import Enum
+from telethon.extensions import markdown
 
 
 class Status(Enum):
@@ -25,7 +26,8 @@ class SimpleClient:
 
     async def _send_media(self, target, media, message="") -> Status:
         try:
-            sent = await self.client.send_file(target, media, caption=message, parse_mode=self.parse_mode)
+            message = markdown.parse(message)
+            sent = await self.client.send_file(target, media, caption=message[0], formatting_entities=message[1])
             logger.log(LogLevel.Info, f"Message {sent[0].id} with {len(media)} media is sent to {target}")
             return Status.Success
         except telethon.errors.MediaCaptionTooLongError as ex:
