@@ -10,7 +10,7 @@ from logger import logger, LogLevel
 from message_handler import MessageHandler
 from ai_client.ai_client import AIClient
 
-configs.title = 'ALGO'
+# configs.title = 'ALGO'
 os.environ['OPENAI_API_KEY'] = configs.read(ConfigProperty.ApiKey)
 openai_client = OpenAI(api_key=configs.read(ConfigProperty.ApiKey))
 aiclient = AIClient(openai_client, role_file='ai_client/roles/role.yaml', language='Hebrew', model="gpt-4o")
