@@ -7,7 +7,7 @@ from telethon.extensions import markdown
 from telethon import types, errors
 from simple_client import SimpleClient
 from logger import logger, LogLevel as Level
-from ai_client import AIClient
+from ai_client.ai_client import AIClient
 
 
 class MessageHandler:

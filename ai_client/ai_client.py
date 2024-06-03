@@ -4,7 +4,7 @@ from urllib import request
 import aiohttp
 import openai
 from logger import logger, LogLevel
-from ai_message import AIMessage
+from ai_client.ai_message import AIMessage
 
 
 def format_content(content: str, tag, text):
@@ -55,17 +55,6 @@ class AIClient:
                 break
 
         raise Exception("Max retries exceeded for OpenAI API request")
-
-    async def generate_image2(self, text):
-        logger.log(LogLevel.Debug, f"Generating Image")
-        response = openai.images.generate(prompt=text, n=1, size="1024x1024", model="dall-e-3")
-        image_url = response['data'][0]['url']
-        img = request.get(image_url)
-        if img.status_code == 200:
-            with open(f'assets/download/aiimage{time.time()}.png') as file:
-                file.write(img.content)
-            return f'assets/download/aiimage{time.time()}.png'
-        return ''
 
     async def generate_image(self, text):
         logger.log(LogLevel.Debug, "Generating Image")

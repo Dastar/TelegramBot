@@ -8,7 +8,7 @@ from read_config import configs
 from enums import ConfigProperty
 from logger import logger, LogLevel
 from message_handler import MessageHandler
-from ai_client import AIClient
+from ai_client.ai_client import AIClient
 
 # configs.title = 'ALGO'
 os.environ['OPENAI_API_KEY'] = configs.read(ConfigProperty.ApiKey)
@@ -18,7 +18,9 @@ aiclient.add_role("system", content="You are a translator and rewriter.")
 content = (f"This GPT is a tech writer and %%LANGUAGE%% language professional, tasked with translating "
            f"every message received into Hebrew and rewriting it to fit the best manner for a tech "
            f"blog format on Telegram. The GPT translate and rewrite and will return only a final "
-           f"version of the text of the actual message. This GPT will add an English hashtag and %%LANGUAGE%% hashtag for every message. This GPT will translate every mentioned currency to the current currency of the %%LANGUAGE%%. This GPT will not translate the code blocks:\n\n%%TEXT%%")
+           f"version of the text of the actual message. This GPT will add an English hashtag and %%LANGUAGE%% hashtag "
+           f"for every message. This GPT will translate every mentioned currency to the current currency of "
+           f"the %%LANGUAGE%%. This GPT will not translate the code blocks:\n\n%%TEXT%%")
 aiclient.add_role("user", content=content)
 
 api_id = configs.read(ConfigProperty.ApiId)
@@ -35,7 +37,7 @@ openai_api_key = configs.read(ConfigProperty.ApiKey)
 async def main():
     stop_event = asyncio.Event()
 
-    async with telethon.TelegramClient('session_name', api_id, api_hash) as client:
+    async with telethon.TelegramClient('session/session_name', api_id, api_hash) as client:
         logger.log(LogLevel.Info, "Connected to Telegram Client")
         message_handler = MessageHandler(client, aiclient, [target_channel])
 
