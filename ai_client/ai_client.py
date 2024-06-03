@@ -3,6 +3,8 @@ import time
 from urllib import request
 import aiohttp
 import openai
+
+from ai_client.role_reader import RoleReader
 from logger import logger, LogLevel
 from ai_client.ai_message import AIMessage
 
@@ -12,25 +14,32 @@ def format_content(content: str, tag, text):
 
 
 class AIClient:
-    def __init__(self, client: openai.OpenAI, language, model="gpt-3.5-turbo"):
+    def __init__(self, client: openai.OpenAI, role_file, language, model="gpt-3.5-turbo"):
         self.client = client
-        self.messages = []
+        self.roles = {}
+        self.main_role = ''
         self.outputLanguage = language
         self.model = model
+        self.role_reader = RoleReader(role_file)
+        self.tags = ['%%LANGUAGE%%', '%%TEXT%%']
 
-    def add_role(self, role, content):
-        message = AIMessage(role, content)
-        message.format_content('%%LANGUAGE%%', self.outputLanguage)
-        self.messages.append(message)
+    def reload_reader(self, role_file):
+        self.role_reader = RoleReader(role_file)
 
-    def remove_role(self, role):
-        self.messages = [message for message in self.messages if message['role'] != role]
+    def add_role(self, name):
+        self.main_role = name
+        if name in self.roles:
+            return
+
+        role = self.role_reader.get_role(name)
+        if role is None:
+            logger.log(LogLevel.Error, f"Role with name {name} not found")
+        self.roles[name] = role
 
     async def run_model(self, text):
         logger.log(LogLevel.Debug, "run_model running")
-        messages = []
-        for message in self.messages:
-            messages.append(message.create_message(text))
+        replacer = [self.outputLanguage, text]
+        messages = self.roles[self.main_role].create_message(self.tags, replacer)
 
         retry_count = 0
         max_retries = 5
