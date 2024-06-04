@@ -1,4 +1,5 @@
 import yaml
+from logger import logger, LogLevel
 
 
 class Reader:
@@ -12,9 +13,14 @@ class Reader:
                 data = yaml.safe_load(yaml_file)
                 return data
         except FileNotFoundError:
-            print(f"File {self.file_path} not found.")
+            logger.log(LogLevel.Error, f"File {self.file_path} not found.")
             return None
-        except yaml.YAMLError:
-            print("Error parsing YAML.")
+        except yaml.YAMLError as y:
+            logger.log(LogLevel.Error, f"Error parsing YAML. {y}")
+            return None
+        except Exception as ex:
+            logger.log(LogLevel.Error, f"Unexpected error: {ex}")
             return None
 
+    def get_data(self, tag):
+        return self.data.get(tag, []) if self.data else []

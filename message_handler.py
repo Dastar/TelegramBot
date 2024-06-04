@@ -8,14 +8,15 @@ from telethon import types, errors
 from simple_client import SimpleClient
 from logger import logger, LogLevel as Level
 from ai_client.ai_client import AIClient
+from channel_registry import ChannelRegistry
 
 
 class MessageHandler:
-    def __init__(self, client, ai_client, target_channels):
-        logger.log(Level.Debug, f"Creating Message Handler. Target channels: {target_channels}")
+    def __init__(self, client, ai_client, channels: ChannelRegistry):
+        logger.log(Level.Debug, f"Creating Message Handler. Number of monitored channels: {len(channels.channels)}")
         self.client = SimpleClient(client, 'md')
         self.ai_client = ai_client
-        self.target_channels = target_channels
+        self.channels = channels
         self.grouped_messages = defaultdict(list)
         self.grouped_files = defaultdict(list)
         self.grouped_timestamp = {}
@@ -23,6 +24,10 @@ class MessageHandler:
     async def handle_new_message(self, event):
         logger.log(Level.Debug, "handle_new_message running")
         message = event.message
+        channel = self.channels.get_channel(event.chat.username)
+        if channel is None:
+            logger.log(Level.Error, f'Target for {event.chat.username} not found.')
+            return
         media = []
         translated_text = ""
 
@@ -54,14 +59,6 @@ class MessageHandler:
                 img = await self.ai_client.generate_image(message_text)
                 if img.strip():
                     media.append(img)
-            elif message_text.startswith('reload role'):
-                self.ai_client.reload_reader('ai_client/roles/role.yaml')
-                self.ai_client.add_role('main')
-                return
-            elif message_text.startswith('role'):
-                message_text = message_text[len('role '):]
-                self.ai_client.add_role(message_text)
-                return
 
         elif message_text.strip() != '':
             logger.log(Level.Debug, f'Got message with text')
@@ -69,7 +66,7 @@ class MessageHandler:
             message_text, code_blocks = self.extract_code_blocks(message_text)
 
             # Translate and rewrite text
-            translated_text = await self.ai_client.run_model(message_text)
+            translated_text = await self.ai_client.run_model(message_text, channel)
 
             # Insert code blocks back into the translated text
             translated_text = self.insert_code_blocks(translated_text, code_blocks)
@@ -84,8 +81,7 @@ class MessageHandler:
 
         logger.log(Level.Debug, f"Translated text: {translated_text}")
 
-        for target in self.target_channels:
-            await self.client.send(target, translated_text, media)
+        await self.client.send(channel.target, translated_text, media)
         for m in media:
             os.remove(m)
 

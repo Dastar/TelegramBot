@@ -14,40 +14,21 @@ def format_content(content: str, tag, text):
 
 
 class AIClient:
-    def __init__(self, client: openai.OpenAI, role_file, language, model="gpt-3.5-turbo"):
+    def __init__(self, client: openai.OpenAI, model="gpt-3.5-turbo"):
         self.client = client
-        self.roles = {}
-        self.main_role = ''
-        self.outputLanguage = language
         self.model = model
-        self.role_reader = RoleReader(role_file)
-        self.tags = ['%%LANGUAGE%%', '%%TEXT%%']
 
-    def reload_reader(self, role_file):
-        self.role_reader = RoleReader(role_file)
-
-    def add_role(self, name):
-        self.main_role = name
-        if name in self.roles:
-            return
-
-        role = self.role_reader.get_role(name)
-        if role is None:
-            logger.log(LogLevel.Error, f"Role with name {name} not found")
-        self.roles[name] = role
-
-    async def run_model(self, text):
+    async def run_model(self, text: str, channel):
         logger.log(LogLevel.Debug, "run_model running")
-        replacer = [self.outputLanguage, text]
-        messages = self.roles[self.main_role].create_message(self.tags, replacer)
 
         retry_count = 0
         max_retries = 5
         backoff_factor = 2
 
+        message = channel.get_message(text)
         while retry_count < max_retries:
             try:
-                response = self.client.chat.completions.create(model=self.model, messages=messages)
+                response = self.client.chat.completions.create(model=self.model, messages=message)
                 content = response.choices[0].message.content.strip()
                 logger.log(LogLevel.Debug, "Got answer from OpenAi, returning")
                 return content

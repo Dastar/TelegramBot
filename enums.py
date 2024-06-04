@@ -5,8 +5,8 @@ class ConfigProperty(str, Enum):
     ApiKey = 'ApiKey'
     ApiId = 'ApiId'
     ApiHash = 'ApiHash'
-    MonitoredChannels = 'MonitoredChannels'
-    TargetChannel = 'TargetChannel'
+    RoleFile = 'RoleFile'
+    ChannelsFile = 'ChannelsFile'
 
 
 class LogLevel(Enum):
