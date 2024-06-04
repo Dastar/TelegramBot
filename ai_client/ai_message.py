@@ -14,6 +14,9 @@ class AIMessage:
     def _format_content(self, tag, text):
         return self.content.replace(tag, text)
 
+    def replace_content(self, tag, text):
+        self.content = self._format_content(tag, text)
+
     def format_content(self, tag, text):
         self.edited_content = self._format_content(tag, text)
 
