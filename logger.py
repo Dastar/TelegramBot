@@ -1,7 +1,6 @@
 import logging
 from enums import LogLevel
 
-
 class Logger:
     def __init__(self, name, level=logging.INFO):
         self.logger = logging.getLogger(name)
@@ -28,12 +27,13 @@ class Logger:
         self.logger.addHandler(handler)
 
     def set_file_handler(self, filename):
-        handler = logging.FileHandler(filename)
+        handler = logging.FileHandler(filename, encoding='utf-8')
         self._set_handler(handler)
 
     def set_console_handler(self):
         handler = logging.StreamHandler()
-        self._set_handler(handler)
+        handler.setFormatter(self.formatter)
+        self.logger.addHandler(handler)
 
     def log(self, level, msg):
         self.writers[level](msg)

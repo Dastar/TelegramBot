@@ -9,6 +9,7 @@ from simple_client import SimpleClient
 from logger import logger, LogLevel as Level
 from ai_client.ai_client import AIClient
 from channel_registry import ChannelRegistry
+from typing import Optional
 
 
 class MessageHandler:
@@ -101,7 +102,7 @@ class MessageHandler:
             return True
         return False
 
-    async def download_media(self, message) -> str | None:
+    async def download_media(self, message) -> Optional[str]:
         try:
             file_path = await message.download_media()
             if file_path and os.path.exists(file_path):
@@ -157,4 +158,3 @@ class MessageHandler:
         for i, block in enumerate(code_blocks):
             text = text.replace(f"[CODE_BLOCK_{i}]", block)
         return text
-

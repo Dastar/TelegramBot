@@ -1,9 +1,11 @@
 import os
 import signal
 import telethon
-from openai import OpenAI
 import asyncio
+import sys
+import ctypes
 
+from openai import OpenAI
 from ai_client.role_reader import RoleReader
 from read_config import configs
 from enums import ConfigProperty
@@ -13,7 +15,7 @@ from ai_client.ai_client import AIClient
 from channel_registry import ChannelRegistry
 from channel_reader import ChannelReader
 
-
+# Read configuration values
 os.environ['OPENAI_API_KEY'] = configs.read(ConfigProperty.ApiKey)
 openai_client = OpenAI(api_key=configs.read(ConfigProperty.ApiKey))
 aiclient = AIClient(openai_client, model="gpt-4o")
@@ -30,7 +32,6 @@ for m, ch in channel_r.get_channels():
 # Initialize OpenAI API
 openai_api_key = configs.read(ConfigProperty.ApiKey)
 
-
 async def main():
     stop_event = asyncio.Event()
 
@@ -44,15 +45,23 @@ async def main():
             await message_handler.handle_new_message(event)
 
         # Function to handle termination signals
-        def signal_handler():
+        def signal_handler(sig=None, frame=None):
             logger.log(LogLevel.Info, 'Received termination signal, exiting...')
             stop_event.set()
 
         loop = asyncio.get_running_loop()
 
-        # Register signal handlers
-        for sig in (signal.SIGINT, signal.SIGTERM):
-            loop.add_signal_handler(sig, signal_handler)
+        if os.name == 'nt':
+            # Windows-specific signal handling
+            def win_signal_handler(dwCtrlType):
+                signal_handler()
+                return True
+
+            ctypes.WinDLL('kernel32').SetConsoleCtrlHandler(ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_uint)(win_signal_handler), True)
+        else:
+            # Unix-like signal handling
+            for sig in (signal.SIGINT, signal.SIGTERM):
+                loop.add_signal_handler(sig, signal_handler)
 
         try:
             # Start the client
@@ -71,7 +80,6 @@ async def main():
                 logger.log(LogLevel.Info, 'Client disconnected successfully')
             else:
                 logger.log(LogLevel.Info, 'Client is not connected')
-
 
 if __name__ == '__main__':
     try:
