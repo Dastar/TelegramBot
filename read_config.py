@@ -11,12 +11,15 @@ class Configs:
         self.config.read(self.file)
 
     def read(self, property):
-        try:
-            output = self.config[self.title][property]
-        except:
+        if self.title not in self.config:
+            raise Exception(f"No section with title {self.title} in configuration file")
+
+        if property not in self.config[self.title]:
             raise Exception(f"No property with name {property} in configuration file")
 
-        if output.find(';') != -1:
+        output = self.config[self.title][property]
+
+        if ';' in output:
             output = output.split(';')
             output = [line for line in output if line.strip()]
         return output
@@ -24,3 +27,9 @@ class Configs:
 
 configs = Configs('config.ini')
 configs.open()
+
+try:
+    role_file = configs.read('RoleFile')
+    print(role_file)
+except Exception as e:
+    print(e)
