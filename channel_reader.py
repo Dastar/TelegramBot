@@ -15,7 +15,10 @@ class ChannelReader(Reader):
         channels = self.get_data('channels')
         for channel in channels:
             if channel['name'] == name:
-                out = Channel(f'@{channel['target']}', self.role_reader.get_role(channel['role']), channel['tags'])
+                out = Channel(f'@{channel['target']}',
+                              self.role_reader.get_role(channel['role']),
+                              channel['tags'],
+                              channel['model'])
                 monitored = [f'@{m}' for m in channel['monitored'].split(';') if m.strip()]
                 return out, monitored
 
@@ -24,6 +27,9 @@ class ChannelReader(Reader):
     def get_channels(self):
         data = self.get_data('channels')
         for d in data:
-            channel = Channel(f'@{d['target']}', self.role_reader.get_role(d['role']), d['tags'])
+            channel = Channel(f'@{d['target']}',
+                              self.role_reader.get_role(d['role']),
+                              d['tags'],
+                              d['model'])
             monitored = [f'@{m}' for m in d['monitored'].split(';') if m.strip()]
             yield channel, monitored

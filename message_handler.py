@@ -9,6 +9,7 @@ from logger import logger, LogLevel as Level
 from ai_client.ai_client import AIClient
 from channel_registry import ChannelRegistry
 from simple_client import SimpleClient
+from helpers.helpers import Helpers
 
 
 class MessageHandler:
@@ -72,9 +73,9 @@ class MessageHandler:
                     media.append(img)
         elif message_text.strip():
             logger.log(Level.Debug, 'Got message with text')
-            message_text, code_blocks = self.extract_code_blocks(message_text)
+            message_text, code_blocks = Helpers.extract_code_blocks(message_text)
             translated_text = await self.ai_client.run_model(message_text, channel)
-            translated_text = self.insert_code_blocks(translated_text, code_blocks)
+            translated_text = Helpers.insert_code_blocks(translated_text, code_blocks)
             translated_text = f"\u202B{translated_text}\u202C"
 
         if message.forward:
@@ -97,7 +98,8 @@ class MessageHandler:
         await asyncio.sleep(1)
         return time.time() - self.grouped_timestamp.get(group_id, 0) > 1
 
-    async def download_media(self, message) -> Optional[str]:
+    @staticmethod
+    async def download_media(message) -> Optional[str]:
         """Download media from a message."""
         try:
             file_path = await message.download_media()
@@ -138,17 +140,4 @@ class MessageHandler:
         else:
             return []
 
-    def extract_code_blocks(self, text):
-        """Extract code blocks from the text."""
-        import re
-        code_block_pattern = re.compile(r'```.*?```', re.DOTALL)
-        code_blocks = code_block_pattern.findall(text)
-        for i, block in enumerate(code_blocks):
-            text = text.replace(block, f"[CODE_BLOCK_{i}]")
-        return text, code_blocks
 
-    def insert_code_blocks(self, text, code_blocks):
-        """Insert code blocks back into the translated text."""
-        for i, block in enumerate(code_blocks):
-            text = text.replace(f"[CODE_BLOCK_{i}]", block)
-        return text

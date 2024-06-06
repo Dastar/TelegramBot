@@ -28,7 +28,7 @@ class AIClient:
         message = channel.get_message(text)
         while retry_count < max_retries:
             try:
-                response = self.client.chat.completions.create(model=self.model, messages=message)
+                response = self.client.chat.completions.create(model=channel.model, messages=message)
                 content = response.choices[0].message.content.strip()
                 logger.log(LogLevel.Debug, "Got answer from OpenAi, returning")
                 return content
