@@ -13,13 +13,15 @@ from setup import setup_signal_handling
 
 def initialize_clients(config):
     """Initialize OpenAI and AI clients."""
+    logger.log(LogLevel.Debug, "Initializing OpenAI client")
     openai_client = OpenAI(api_key=config['api_key'])
-    aiclient = AIClient(openai_client, model="gpt-4o")
+    aiclient = AIClient(openai_client)
     return aiclient
 
 
 def setup_channels(config):
     """Set up channel registry and readers."""
+    logger.log(LogLevel.Debug, "Setting up channels")
     role_reader = RoleReader(config['role_file'])
     channel_reader = ChannelReader(config['channels_file'], role_reader)
     channels = ChannelRegistry()
@@ -30,10 +32,10 @@ def setup_channels(config):
 
 async def run_client(config, aiclient, channels):
     """Run the Telegram client and handle messages."""
+    logger.log(LogLevel.Info, "Connecting to Telegram Client")
     stop_event = asyncio.Event()
 
     async with TelegramClient(config['session_name'], config['api_id'], config['api_hash']) as client:
-        logger.log(LogLevel.Info, "Connected to Telegram Client")
         message_handler = MessageHandler(client, aiclient, channels, config)
 
         @client.on(events.NewMessage(chats=channels.get_monitored()))

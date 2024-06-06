@@ -9,6 +9,10 @@ class ConfigProperty(str, Enum):
     RoleFile = 'RoleFile'
     ChannelsFile = 'ChannelsFile'
     ForwardMessage = 'ForwardMessage'
+    LogFile = 'LogFile'
+    LogLevel = 'LogLevel'
+    LogName = 'LogName'
+    LogFormat = 'LogFormat'
 
 
 class LogLevel(Enum):

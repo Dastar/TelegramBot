@@ -3,10 +3,11 @@ from ai_client.role import Role
 
 
 class Channel:
-    def __init__(self, target, role: Role, tags):
+    def __init__(self, target, role: Role, tags, model):
         self.target = target
         self.role = role
         self.role.init_tags(tags)
+        self.model = model
 
     def init_role(self, role: Role, tags):
         self.role = role

@@ -1,14 +1,25 @@
 import logging
-from enums import LogLevel
+from enums import LogLevel, ConfigProperty
+from read_config import configs
+
 
 class Logger:
-    def __init__(self, name, level=logging.INFO):
+    def __init__(self, name, level, formatter):
         self.logger = logging.getLogger(name)
         self.logger.setLevel(level)
-        self.level = level
+
+        log_levels = {
+            'DEBUG': logging.DEBUG,
+            'INFO': logging.INFO,
+            'WARNING': logging.WARNING,
+            'ERROR': logging.ERROR,
+            'CRITICAL': logging.CRITICAL
+        }
+        self.level = log_levels[level]
 
         # Create a formatter and set it for both handlers
         self.formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        self.formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
         self.writers = {
             LogLevel.Debug: self.logger.debug,
@@ -39,6 +50,10 @@ class Logger:
         self.writers[level](msg)
 
 
-logger = Logger('TBLog', logging.DEBUG)
-logger.set_file_handler('logger.log')
+logger = Logger(configs.read(ConfigProperty.LogName),
+                configs.read(ConfigProperty.LogLevel),
+                configs.read(ConfigProperty.LogFormat)
+                )
+
+logger.set_file_handler(ConfigProperty.LogFile)
 logger.set_console_handler()

@@ -14,9 +14,8 @@ def format_content(content: str, tag, text):
 
 
 class AIClient:
-    def __init__(self, client: openai.OpenAI, model="gpt-3.5-turbo"):
+    def __init__(self, client: openai.OpenAI):
         self.client = client
-        self.model = model
 
     async def run_model(self, text: str, channel):
         logger.log(LogLevel.Debug, "run_model running")
@@ -28,7 +27,7 @@ class AIClient:
         message = channel.get_message(text)
         while retry_count < max_retries:
             try:
-                response = self.client.chat.completions.create(model=self.model, messages=message)
+                response = self.client.chat.completions.create(model=channel.model, messages=message)
                 content = response.choices[0].message.content.strip()
                 logger.log(LogLevel.Debug, "Got answer from OpenAi, returning")
                 return content
