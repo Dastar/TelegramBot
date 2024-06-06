@@ -14,9 +14,8 @@ def format_content(content: str, tag, text):
 
 
 class AIClient:
-    def __init__(self, client: openai.OpenAI, model="gpt-3.5-turbo"):
+    def __init__(self, client: openai.OpenAI):
         self.client = client
-        self.model = model
 
     async def run_model(self, text: str, channel):
         logger.log(LogLevel.Debug, "run_model running")

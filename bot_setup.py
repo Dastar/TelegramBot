@@ -15,7 +15,7 @@ def initialize_clients(config):
     """Initialize OpenAI and AI clients."""
     logger.log(LogLevel.Debug, "Initializing OpenAI client")
     openai_client = OpenAI(api_key=config['api_key'])
-    aiclient = AIClient(openai_client, model="gpt-4o")
+    aiclient = AIClient(openai_client)
     return aiclient
 
 
