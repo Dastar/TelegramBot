@@ -5,6 +5,7 @@ class ConfigProperty(str, Enum):
     ApiKey = 'ApiKey'
     ApiId = 'ApiId'
     ApiHash = 'ApiHash'
+    SessionName = 'SessionName'
     RoleFile = 'RoleFile'
     ChannelsFile = 'ChannelsFile'
     ForwardMessage = 'ForwardMessage'

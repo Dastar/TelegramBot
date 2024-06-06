@@ -18,7 +18,8 @@ def read_configuration():
         'api_hash': api_hash,
         'role_file': configs.read(ConfigProperty.RoleFile),
         'channels_file': configs.read(ConfigProperty.ChannelsFile),
-        'forward_message': configs.read(ConfigProperty.ForwardMessage)
+        'forward_message': configs.read(ConfigProperty.ForwardMessage),
+        'session_name': configs.read(ConfigProperty.SessionName)
     }
 
 
