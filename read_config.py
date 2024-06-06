@@ -10,14 +10,14 @@ class Configs:
     def open(self):
         self.config.read(self.file)
 
-    def read(self, property):
+    def read(self, property_name):
         if self.title not in self.config:
             raise Exception(f"No section with title {self.title} in configuration file")
 
-        if property not in self.config[self.title]:
-            raise Exception(f"No property with name {property} in configuration file")
+        if property_name not in self.config[self.title]:
+            raise Exception(f"No property with name {property_name} in configuration file")
 
-        output = self.config[self.title][property]
+        output = self.config[self.title][property_name]
 
         if ';' in output:
             output = output.split(';')
@@ -25,11 +25,12 @@ class Configs:
         return output
 
 
-configs = Configs('config.ini')
+configs = Configs('configurations/config.ini')
 configs.open()
 
-try:
-    role_file = configs.read('RoleFile')
-    print(role_file)
-except Exception as e:
-    print(e)
+if __name__ == "__main__":
+    try:
+        role_file = configs.read('RoleFile')
+        print(role_file)
+    except Exception as e:
+        print(e)
