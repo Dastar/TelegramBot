@@ -25,7 +25,7 @@ class Configs:
         return output
 
 
-configs = Configs('config.ini')
+configs = Configs('configurations/config.ini')
 configs.open()
 
 if __name__ == "__main__":
