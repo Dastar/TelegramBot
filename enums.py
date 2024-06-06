@@ -7,6 +7,7 @@ class ConfigProperty(str, Enum):
     ApiHash = 'ApiHash'
     RoleFile = 'RoleFile'
     ChannelsFile = 'ChannelsFile'
+    ForwardMessage = 'ForwardMessage'
 
 
 class LogLevel(Enum):

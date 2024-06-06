@@ -28,13 +28,13 @@ def setup_channels(config):
     return channels
 
 
-async def run_client(session, api_id, api_hash, aiclient, channels):
+async def run_client(session, config, aiclient, channels):
     """Run the Telegram client and handle messages."""
     stop_event = asyncio.Event()
 
-    async with TelegramClient(session, api_id, api_hash) as client:
+    async with TelegramClient(session, config['api_id'], config['api_hash']) as client:
         logger.log(LogLevel.Info, "Connected to Telegram Client")
-        message_handler = MessageHandler(client, aiclient, channels)
+        message_handler = MessageHandler(client, aiclient, channels, config)
 
         @client.on(events.NewMessage(chats=channels.get_monitored()))
         async def handle_message(event):

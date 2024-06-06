@@ -11,7 +11,7 @@ def main():
     aiclient = initialize_clients(config)
     channels = setup_channels(config)
 
-    asyncio.run(run_client('sessions/session_name', config['api_id'], config['api_hash'], aiclient, channels))
+    asyncio.run(run_client('sessions/session_name', config, aiclient, channels))
 
 
 if __name__ == '__main__':
