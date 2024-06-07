@@ -20,3 +20,7 @@ class LogLevel(Enum):
     Warning = 2
     Error = 4
     Critical = 5
+
+
+class Commands(str, Enum):
+    Delay = '/command: delay'
