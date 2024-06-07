@@ -1,5 +1,6 @@
 import yaml
-from logger import logger, LogLevel
+from logger import LogLevel
+from setup import logger
 
 
 class Reader:

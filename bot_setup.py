@@ -6,7 +6,8 @@ from configuration_readers.role_reader import RoleReader
 from ai_client.ai_client import AIClient
 from channel_registry import ChannelRegistry
 from configuration_readers.channel_reader import ChannelReader
-from logger import logger, LogLevel
+from logger import LogLevel
+from setup import logger
 from message_handler import MessageHandler
 from setup import setup_signal_handling
 

@@ -3,7 +3,8 @@ import time
 import aiohttp
 import openai
 
-from logger import logger, LogLevel
+from logger import LogLevel
+from setup import logger
 
 
 def format_content(content: str, tag, text):

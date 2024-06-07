@@ -1,5 +1,6 @@
 import telethon
-from logger import logger, LogLevel
+from logger import LogLevel
+from setup import logger
 from enums import Enum
 from telethon.extensions import markdown
 
