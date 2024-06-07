@@ -2,7 +2,7 @@ from telethon import TelegramClient, events
 import asyncio
 from openai import OpenAI
 
-from ai_client.role_reader import RoleReader
+from configuration_readers.role_reader import RoleReader
 from ai_client.ai_client import AIClient
 from channel_registry import ChannelRegistry
 from channel_reader import ChannelReader
@@ -25,8 +25,8 @@ def setup_channels(config):
     role_reader = RoleReader(config['role_file'])
     channel_reader = ChannelReader(config['channels_file'], role_reader)
     channels = ChannelRegistry()
-    for m, ch in channel_reader.get_channels():
-        channels.add_channels(ch, m)
+    for channel, sources in channel_reader.get_channels():
+        channels.add_channels(channel, sources)
     return channels
 
 

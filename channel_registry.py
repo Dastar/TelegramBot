@@ -29,7 +29,7 @@ class ChannelRegistry:
     def add_channel(self, monitored, channel):
         self.channels[monitored] = channel
 
-    def add_channels(self, monitored: list, channel: Channel):
+    def add_channels(self, channel: Channel, monitored: list):
         for m in monitored:
             self.add_channel(m, channel)
 

@@ -1,6 +1,6 @@
 from data_reader import Reader
 from channel_registry import Channel
-from ai_client.role_reader import RoleReader
+from configuration_readers.role_reader import RoleReader
 
 
 class ChannelReader(Reader):
@@ -8,28 +8,12 @@ class ChannelReader(Reader):
         super().__init__(file_path)
         self.role_reader = role_reader
 
-    def reload_reader(self, role_file):
-        self.role_reader = RoleReader(role_file)
-
-    def get_channel(self, name):
-        channels = self.get_data('channels')
-        for channel in channels:
-            if channel['name'] == name:
-                out = Channel(f'@{channel['target']}',
-                              self.role_reader.get_role(channel['role']),
-                              channel['tags'],
-                              channel['model'])
-                monitored = [f'@{m}' for m in channel['monitored'].split(';') if m.strip()]
-                return out, monitored
-
-        return None, []
-
     def get_channels(self):
-        data = self.get_data('channels')
-        for d in data:
-            channel = Channel(f'@{d['target']}',
-                              self.role_reader.get_role(d['role']),
-                              d['tags'],
-                              d['model'])
-            monitored = [f'@{m}' for m in d['monitored'].split(';') if m.strip()]
-            yield channel, monitored
+        for channel in self.get_attributes('channels', self.channel_reader):
+            yield channel
+
+    def channel_reader(self, data):
+        role = self.role_reader.get_role(data['role'])
+        channel = Channel(f'@{data['target']}', role, data['tags'], data['model'])
+        sources = [f'@{m}' for m in data['monitored'].split(';') if m.strip()]
+        return channel, sources

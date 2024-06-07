@@ -24,3 +24,15 @@ class Reader:
 
     def get_data(self, tag):
         return self.data.get(tag, []) if self.data else []
+
+    def get_attribute(self, section, tag, func):
+        data = self.get_data(section)
+        for d in data:
+            if d['name'] == tag:
+                return func(d)
+        return None
+
+    def get_attributes(self, section, func):
+        data = self.get_data(section)
+        for d in data:
+            yield func(d)
