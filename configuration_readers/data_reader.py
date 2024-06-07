@@ -3,7 +3,7 @@ from logger import LogLevel
 from setup import logger
 
 
-class Reader:
+class DataReader:
     def __init__(self, file_path):
         self.file_path = file_path
         self.data = self._load_yaml()

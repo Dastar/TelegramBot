@@ -37,8 +37,7 @@ class Configurations:
             'api_key': self.read(ConfigProperty.ApiKey),
             'api_id': api_id,
             'api_hash': api_hash,
-            'role_file': self.read(ConfigProperty.RoleFile),
-            'channels_file': self.read(ConfigProperty.ChannelsFile),
+            'bot_config': self.read(ConfigProperty.BotConfig),
             'forward_message': self.read(ConfigProperty.ForwardMessage),
             'session_name': self.read(ConfigProperty.SessionName)
         }
