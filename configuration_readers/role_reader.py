@@ -1,4 +1,4 @@
-from data_reader import Reader
+from configuration_readers.data_reader import Reader
 from ai_client.role import Role
 
 

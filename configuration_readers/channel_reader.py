@@ -1,4 +1,4 @@
-from data_reader import Reader
+from configuration_readers.data_reader import Reader
 from channel_registry import Channel
 from configuration_readers.role_reader import RoleReader
 
