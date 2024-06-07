@@ -3,10 +3,10 @@ import signal
 import ctypes
 
 from enums import ConfigProperty
-from read_config import Configs
+from configuration_readers.configuration_reader import Configurations
 from logger import Logger, LogLevel
 
-CONFIGS = Configs('configurations/config.ini').open()
+CONFIGS = Configurations('configurations/config.ini').open()
 logger = Logger(CONFIGS.read(ConfigProperty.LogName),
                 CONFIGS.read(ConfigProperty.LogLevel),
                 CONFIGS.read(ConfigProperty.LogFormat)

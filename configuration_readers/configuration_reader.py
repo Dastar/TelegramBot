@@ -4,7 +4,7 @@ import os
 from enums import ConfigProperty
 
 
-class Configs:
+class Configurations:
     def __init__(self, config_file):
         self.config = configparser.ConfigParser()
         self.file = config_file
