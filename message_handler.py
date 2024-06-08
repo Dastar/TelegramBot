@@ -35,7 +35,7 @@ class MessageHandler:
         """Process message content and media."""
 
         await self._wait_for_grouped_messages(message)
-        await message.download_media()
+        await message.download_tg_media(self.client.client)
 
         text = message.get_text()
         if text.strip():
@@ -53,4 +53,5 @@ class MessageHandler:
         if not await message.all_messages_received():
             if not await message.all_messages_received():
                 logger.log(LogLevel.Error, 'Failed to receive all grouped messages.')
+        self.message_pool.remove_message(message.grouped_id)
 

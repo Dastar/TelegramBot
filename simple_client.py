@@ -28,7 +28,14 @@ class SimpleClient:
     async def _send_media(self, target, media, message="") -> Status:
         try:
             message = markdown.parse(message)
-            sent = await self.client.send_file(target, media, caption=message[0], formatting_entities=message[1])
+            upload = []
+            for i in range(len(media)):
+                logger.log(LogLevel.Info, f"uploading {i} file out of {len(media)}")
+                f = await self.client.upload_file(media[i])
+                upload.append(f)
+
+            sent = await self.client.send_message(target, message[0], formatting_entities=message[1], file=upload)
+
             logger.log(LogLevel.Info, f"Message {sent[0].id} with {len(media)} media is sent to {target}")
             return Status.Success
         except telethon.errors.MediaCaptionTooLongError as ex:

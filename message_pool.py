@@ -35,4 +35,7 @@ class MessagePool:
         message = ChannelMessage(msg, channel)
         return message
 
-
+    def remove_message(self, gid):
+        if gid is not None:
+            if gid in self.grouped_messages:
+                self.grouped_messages.pop(gid)

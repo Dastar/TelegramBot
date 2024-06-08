@@ -1,6 +1,7 @@
 import asyncio
 import os
 import time
+from datetime import datetime
 from typing import List, Optional
 
 from enums import LogLevel
@@ -26,19 +27,14 @@ class ChannelMessage:
     def add_message(self, message):
         self.messages.append(message)
 
-    async def download_media(self):
+    async def download_tg_media(self, client):
         for msg in self.messages:
             if msg.media:
                 try:
-                    file_path = await msg.download_media()
+                    file_path = await client.download_media(msg, file='download')
                     if file_path and os.path.exists(file_path):
-                        new_file_path = os.path.join("assets/download", file_path)
-
-                        logger.log(LogLevel.Debug, f"Got media file: {new_file_path}")
-
-                        os.makedirs(os.path.dirname(new_file_path), exist_ok=True)
-                        os.rename(file_path, new_file_path)
-                        self.media.append(new_file_path)
+                        logger.log(LogLevel.Debug, f"Got media file: {file_path}")
+                        self.media.append(file_path)
                     else:
                         logger.log(LogLevel.Error, f"File path does not exist: {file_path}")
                 except Exception as e:
@@ -59,6 +55,8 @@ class ChannelMessage:
 
     def get_forward_name(self, forwarded_message):
         """Retrieve the name of the original sender of a forwarded message."""
+        if not self.forward:
+            return
         name = 'Unknown'
         if self.forward.sender:
             name = self.forward.sender.username
