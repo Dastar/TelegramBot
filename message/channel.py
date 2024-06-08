@@ -4,13 +4,15 @@ import time
 from datetime import datetime
 from typing import List, Optional
 
+from telethon import Button
+
 from enums import LogLevel
 from helpers.helpers import Helpers
 from setup import logger
 
 
 class ChannelMessage:
-    def __init__(self, message, channel, delay=''):
+    def __init__(self, message, channel, delay='', buttons=None):
         self.messages = [message]
         self.media = []
         self.grouped_id = message.grouped_id
@@ -19,6 +21,10 @@ class ChannelMessage:
         self.time = time.time()
         self.delay = 0 if not delay else Helpers.time_to_timestamp(delay)
         self.output_text = message.text
+        self.buttons = buttons
+
+    def is_command(self):
+        return self.buttons is not None
 
     def add_message(self, message):
         self.messages.append(message)

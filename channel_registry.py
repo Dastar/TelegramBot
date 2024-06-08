@@ -1,12 +1,15 @@
 from collections import defaultdict
+from typing import Optional
+
 from ai_client.role import Role
 
 
 class Channel:
-    def __init__(self, target, role: Role, tags, model):
+    def __init__(self, target, role: Optional[Role], tags, model):
         self.target = target
         self.role = role
-        self.role.init_tags(tags)
+        if self.role:
+            self.role.init_tags(tags)
         self.model = model
 
     def init_role(self, role: Role, tags):
