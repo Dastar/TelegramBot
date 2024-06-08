@@ -35,7 +35,7 @@ class MessageHandler:
         """Process message content and media."""
 
         await self._wait_for_grouped_messages(message)
-        await message.download_tg_media(self.client.client)
+        message.download_tg_media()
 
         text = message.get_text()
         if text.strip():

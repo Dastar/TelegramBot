@@ -20,25 +20,13 @@ class ChannelMessage:
         self.delay = 0 if not delay else Helpers.time_to_timestamp(delay)
         self.output_text = message.text
 
-    def __del__(self):
-        for m in self.media:
-            os.remove(m)
-
     def add_message(self, message):
         self.messages.append(message)
 
-    async def download_tg_media(self, client):
+    def download_tg_media(self):
         for msg in self.messages:
             if msg.media:
-                try:
-                    file_path = await client.download_media(msg, file='download')
-                    if file_path and os.path.exists(file_path):
-                        logger.log(LogLevel.Debug, f"Got media file: {file_path}")
-                        self.media.append(file_path)
-                    else:
-                        logger.log(LogLevel.Error, f"File path does not exist: {file_path}")
-                except Exception as e:
-                    logger.log(LogLevel.Error, f"Error downloading media: {e}")
+                self.media.append(msg.media)
 
     async def all_messages_received(self) -> bool:
         if not self.grouped_id:
