@@ -1,4 +1,6 @@
 import telethon
+
+from channel_message import ChannelMessage
 from logger import LogLevel
 from setup import logger
 from enums import Enum
@@ -16,14 +18,16 @@ class SimpleClient:
         self.client = client
         self.parse_mode = parse_mode
 
-    async def send(self, target, message, media=None):
-        if media:
-            status = await self._send_media(target, media, message)
+    async def send(self, message: ChannelMessage):
+        if message.media:
+            status = await self._send_media(message.channel.target, message.media, message.output_text)
             if status == Status.MediaCaptionTooLong:
-                status = await self._send_media(target, media)
-                status = await self._send_message(target, message)
+                status = await self._send_media(message.channel.target, message.media)
+                status = await self._send_message(message.channel.target, message.output_text)
+        elif message.buttons:
+            await self._send_buttons(message.messages[0].chat.username, message.output_text, message.buttons)
         else:
-            status = await self._send_message(target, message)
+            await self._send_message(message.channel.target, message.output_text)
 
     @staticmethod
     def callback(current, total):
@@ -47,6 +51,15 @@ class SimpleClient:
     async def _send_message(self, target, message) -> Status:
         try:
             sent = await self.client.send_message(target, message, parse_mode='md')
+            logger.log(LogLevel.Info, f"Message {sent.id} is sent to {target}")
+            return Status.Success
+        except Exception as e:
+            logger.log(LogLevel.Error, f"Error occurred: {e}")
+            return Status.Error
+
+    async def _send_buttons(self, target, message, buttons):
+        try:
+            sent = await self.client.send_message(target, message, parse_mode='md', buttons=buttons)
             logger.log(LogLevel.Info, f"Message {sent.id} is sent to {target}")
             return Status.Success
         except Exception as e:

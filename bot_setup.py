@@ -43,8 +43,15 @@ async def run_client(config, aiclient, channels):
 
         @client.on(events.NewMessage(chats=channels.get_monitored()))
         async def handle_message(event):
-            logger.log(LogLevel.Debug, "Got new message, processing")
             await message_handler.handle_new_message(event)
+
+        @client.on(events.CallbackQuery)
+        async def handler(event):
+            data = event.data.decode('utf-8')
+            if data == 'callback_data_1':
+                await event.answer('You pressed Button 1')
+            elif data == 'callback_data_2':
+                await event.answer('You pressed Button 2')
 
         loop = asyncio.get_running_loop()
         setup_signal_handling(loop, stop_event)

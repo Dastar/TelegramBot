@@ -19,7 +19,6 @@ class MessageHandler:
 
     async def handle_new_message(self, event):
         """Handle new incoming messages."""
-        logger.log(LogLevel.Debug, "handle_new_message running")
         message = self.message_pool.create_message(event)
         if message is None:
             return
@@ -27,7 +26,7 @@ class MessageHandler:
         await self.process_message(message)
 
         logger.log(LogLevel.Debug, f"Translated text: {message.output_text}")
-        await self.client.send(message.channel.target, message.output_text, message.media)
+        await self.client.send(message)
 
         logger.log(LogLevel.Debug, "Exiting handle_new_message")
 
