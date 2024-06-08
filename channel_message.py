@@ -23,7 +23,7 @@ class ChannelMessage:
     def add_message(self, message):
         self.messages.append(message)
 
-    async def download_tg_media(self, client):
+    def download_tg_media(self):
         for msg in self.messages:
             if msg.media:
                 self.media.append(msg.media)
