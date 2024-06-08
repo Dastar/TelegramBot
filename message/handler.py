@@ -1,12 +1,12 @@
 from logger import LogLevel
-from message_factory import MessageFactory
 from setup import logger
 from ai_client.ai_client import AIClient
 from channel_registry import ChannelRegistry
 from simple_client import SimpleClient
 from helpers.helpers import Helpers
 
-from channel_message import ChannelMessage
+from message.factory import MessageFactory
+from message.channel import ChannelMessage
 
 
 class MessageHandler:
@@ -22,6 +22,10 @@ class MessageHandler:
         message = self.message_pool.create_message(event)
         if message is None:
             return
+        if message.is_command():
+            logger.log(LogLevel.Info, 'Sending command menu')
+            await self.client.send(message)
+            return
 
         await self.process_message(message)
 
@@ -29,6 +33,13 @@ class MessageHandler:
         await self.client.send(message)
 
         logger.log(LogLevel.Debug, "Exiting handle_new_message")
+
+    async def hadle_buttons(self, event):
+        data = event.data.decode('utf-8')
+        if data == 'restart':
+            await event.answer('Restarting')
+            return data
+        return ''
 
     async def process_message(self, message):
         """Process message content and media."""

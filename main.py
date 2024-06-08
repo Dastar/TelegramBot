@@ -11,11 +11,19 @@ def main():
     aiclient = initialize_clients(config)
     channels = setup_channels(config)
 
-    asyncio.run(run_client(config, aiclient, channels))
+    return asyncio.run(run_client(config, aiclient, channels))
 
 
 if __name__ == '__main__':
-    try:
-        main()
-    finally:
-        logger.log(LogLevel.Info, 'Event loop closed')
+    while True:
+        try:
+            result = main()
+            if result == 'restart':  # Adjust this condition based on the actual return value that indicates a restart
+                logger.log(LogLevel.Info, 'Restarting the application...')
+                continue
+            break
+        except Exception as e:
+            logger.log(LogLevel.Error, f'Error: {e}')
+            break
+        finally:
+            logger.log(LogLevel.Info, 'Event loop closed')
