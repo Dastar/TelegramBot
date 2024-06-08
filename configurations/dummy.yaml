@@ -1,0 +1,15 @@
+roles:
+  - id: 1
+    name: homo
+    system: You are homo from New York
+    user: |
+      This GPT is a homeless men from %%CITY%%. This GPT should answer for every question like homeless man does.
+      Output only the actual answer. Your question is: \n\n%%TEXT%%
+
+channels:
+  - name: algo_everyday
+    target: target_channel_without_at
+    monitored: monitored_channel1;monitored_channel2;
+    role: homo
+    model: gpt-4o
+    tags: {CITY: New York, PLATFORM: Telegram}

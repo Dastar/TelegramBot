@@ -6,8 +6,7 @@ class ConfigProperty(str, Enum):
     ApiId = 'ApiId'
     ApiHash = 'ApiHash'
     SessionName = 'SessionName'
-    RoleFile = 'RoleFile'
-    ChannelsFile = 'ChannelsFile'
+    BotConfig = 'BotConfig'
     ForwardMessage = 'ForwardMessage'
     LogFile = 'LogFile'
     LogLevel = 'LogLevel'
@@ -21,3 +20,9 @@ class LogLevel(Enum):
     Warning = 2
     Error = 4
     Critical = 5
+
+
+class Commands(str, Enum):
+    Command = '/command: '
+    CreateMessage = 'create message'
+    Delay = 'delay'

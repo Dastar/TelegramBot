@@ -1,13 +1,13 @@
 import asyncio
 
-from logger import logger, LogLevel
-from setup import read_configuration
+from logger import LogLevel
+from setup import CONFIGS, logger
 from bot_setup import initialize_clients, setup_channels, run_client
 
 
 def main():
     """Main function to run the program."""
-    config = read_configuration()
+    config = CONFIGS.read_configuration()
     aiclient = initialize_clients(config)
     channels = setup_channels(config)
 

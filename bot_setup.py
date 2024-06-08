@@ -2,11 +2,13 @@ from telethon import TelegramClient, events
 import asyncio
 from openai import OpenAI
 
-from ai_client.role_reader import RoleReader
+from configuration_readers.data_reader import DataReader
+from configuration_readers.role_reader import RoleReader
 from ai_client.ai_client import AIClient
 from channel_registry import ChannelRegistry
-from channel_reader import ChannelReader
-from logger import logger, LogLevel
+from configuration_readers.channel_reader import ChannelReader
+from logger import LogLevel
+from setup import logger
 from message_handler import MessageHandler
 from setup import setup_signal_handling
 
@@ -22,11 +24,12 @@ def initialize_clients(config):
 def setup_channels(config):
     """Set up channel registry and readers."""
     logger.log(LogLevel.Debug, "Setting up channels")
-    role_reader = RoleReader(config['role_file'])
-    channel_reader = ChannelReader(config['channels_file'], role_reader)
+    reader = DataReader(config['bot_config'])
+    role_reader = RoleReader(reader)
+    channel_reader = ChannelReader(role_reader, reader)
     channels = ChannelRegistry()
-    for m, ch in channel_reader.get_channels():
-        channels.add_channels(ch, m)
+    for channel, sources in channel_reader.get_channels():
+        channels.add_channels(channel, sources)
     return channels
 
 

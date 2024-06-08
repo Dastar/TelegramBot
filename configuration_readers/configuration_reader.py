@@ -1,7 +1,10 @@
 import configparser
+import os
+
+from enums import ConfigProperty
 
 
-class Configs:
+class Configurations:
     def __init__(self, config_file):
         self.config = configparser.ConfigParser()
         self.file = config_file
@@ -9,6 +12,7 @@ class Configs:
 
     def open(self):
         self.config.read(self.file)
+        return self
 
     def read(self, property_name):
         if self.title not in self.config:
@@ -24,13 +28,16 @@ class Configs:
             output = [line for line in output if line.strip()]
         return output
 
-
-configs = Configs('configurations/config.ini')
-configs.open()
-
-if __name__ == "__main__":
-    try:
-        role_file = configs.read('RoleFile')
-        print(role_file)
-    except Exception as e:
-        print(e)
+    def read_configuration(self):
+        """Read and set up configuration values."""
+        os.environ['OPENAI_API_KEY'] = self.read(ConfigProperty.ApiKey)
+        api_id = self.read(ConfigProperty.ApiId)
+        api_hash = self.read(ConfigProperty.ApiHash)
+        return {
+            'api_key': self.read(ConfigProperty.ApiKey),
+            'api_id': api_id,
+            'api_hash': api_hash,
+            'bot_config': self.read(ConfigProperty.BotConfig),
+            'forward_message': self.read(ConfigProperty.ForwardMessage),
+            'session_name': self.read(ConfigProperty.SessionName)
+        }

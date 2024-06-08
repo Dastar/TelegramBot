@@ -2,25 +2,18 @@ import os
 import signal
 import ctypes
 
-from read_config import configs
 from enums import ConfigProperty
-from logger import logger, LogLevel
+from configuration_readers.configuration_reader import Configurations
+from logger import Logger, LogLevel
 
+CONFIGS = Configurations('configurations/config.ini').open()
+logger = Logger(CONFIGS.read(ConfigProperty.LogName),
+                CONFIGS.read(ConfigProperty.LogLevel),
+                CONFIGS.read(ConfigProperty.LogFormat)
+                )
 
-def read_configuration():
-    """Read and set up configuration values."""
-    os.environ['OPENAI_API_KEY'] = configs.read(ConfigProperty.ApiKey)
-    api_id = configs.read(ConfigProperty.ApiId)
-    api_hash = configs.read(ConfigProperty.ApiHash)
-    return {
-        'api_key': configs.read(ConfigProperty.ApiKey),
-        'api_id': api_id,
-        'api_hash': api_hash,
-        'role_file': configs.read(ConfigProperty.RoleFile),
-        'channels_file': configs.read(ConfigProperty.ChannelsFile),
-        'forward_message': configs.read(ConfigProperty.ForwardMessage),
-        'session_name': configs.read(ConfigProperty.SessionName)
-    }
+logger.set_file_handler(CONFIGS.read(ConfigProperty.LogFile))
+logger.set_console_handler()
 
 
 def setup_signal_handling(loop, stop_event):

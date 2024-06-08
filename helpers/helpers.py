@@ -1,3 +1,6 @@
+from datetime import datetime
+
+
 class Helpers:
     @staticmethod
     def extract_code_blocks(text):
@@ -22,4 +25,14 @@ class Helpers:
         while text[i].isalpha():
             i += 1
         return i
+
+    @staticmethod
+    def time_to_timestamp(time_str):
+        # Define the format of the input time string
+        time_format = "%H:%M"
+        # Convert the time string to a datetime object
+        time_obj = datetime.strptime(time_str, time_format)
+        # Convert the datetime object to a timestamp
+        timestamp = time_obj.timestamp()
+        return timestamp
 

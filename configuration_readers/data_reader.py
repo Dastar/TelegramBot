@@ -1,8 +1,9 @@
 import yaml
-from logger import logger, LogLevel
+from logger import LogLevel
+from setup import logger
 
 
-class Reader:
+class DataReader:
     def __init__(self, file_path):
         self.file_path = file_path
         self.data = self._load_yaml()
@@ -24,3 +25,15 @@ class Reader:
 
     def get_data(self, tag):
         return self.data.get(tag, []) if self.data else []
+
+    def get_attribute(self, section, tag, func):
+        data = self.get_data(section)
+        for d in data:
+            if d['name'] == tag:
+                return func(d)
+        return None
+
+    def get_attributes(self, section, func):
+        data = self.get_data(section)
+        for d in data:
+            yield func(d)

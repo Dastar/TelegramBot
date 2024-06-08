@@ -1,12 +1,10 @@
 import asyncio
 import time
-from urllib import request
 import aiohttp
 import openai
 
-from ai_client.role_reader import RoleReader
-from logger import logger, LogLevel
-from ai_client.ai_message import AIMessage
+from logger import LogLevel
+from setup import logger
 
 
 def format_content(content: str, tag, text):

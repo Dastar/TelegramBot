@@ -1,6 +1,5 @@
 import logging
-from enums import LogLevel, ConfigProperty
-from read_config import configs
+from enums import LogLevel
 
 
 class Logger:
@@ -48,12 +47,3 @@ class Logger:
 
     def log(self, level, msg):
         self.writers[level](msg)
-
-
-logger = Logger(configs.read(ConfigProperty.LogName),
-                configs.read(ConfigProperty.LogLevel),
-                configs.read(ConfigProperty.LogFormat)
-                )
-
-logger.set_file_handler(ConfigProperty.LogFile)
-logger.set_console_handler()
