@@ -25,6 +25,11 @@ class SimpleClient:
         else:
             status = await self._send_message(target, message)
 
+    @staticmethod
+    def callback(current, total):
+        print('Uploaded', current, 'out of', total,
+              'bytes: {:.2%}'.format(current / total))
+
     async def _send_media(self, target, media, message="") -> Status:
         try:
             message = markdown.parse(message)

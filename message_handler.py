@@ -1,5 +1,5 @@
 from logger import LogLevel
-from message_pool import MessagePool
+from message_factory import MessageFactory
 from setup import logger
 from ai_client.ai_client import AIClient
 from channel_registry import ChannelRegistry
@@ -14,7 +14,7 @@ class MessageHandler:
         logger.log(LogLevel.Debug, f"Creating Message Handler. Number of monitored channels: {len(channels.channels)}")
         self.client = SimpleClient(client, 'md')
         self.ai_client = ai_client
-        self.message_pool = MessagePool(channels)
+        self.message_pool = MessageFactory(channels)
         self.forwarded_message = config['forward_message']
 
     async def handle_new_message(self, event):

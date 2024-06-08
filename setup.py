@@ -12,7 +12,7 @@ logger = Logger(CONFIGS.read(ConfigProperty.LogName),
                 CONFIGS.read(ConfigProperty.LogFormat)
                 )
 
-logger.set_file_handler(ConfigProperty.LogFile)
+logger.set_file_handler(CONFIGS.read(ConfigProperty.LogFile))
 logger.set_console_handler()
 
 

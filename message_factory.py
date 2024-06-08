@@ -6,23 +6,30 @@ from enums import Commands, LogLevel
 from setup import logger
 
 
-class MessagePool:
+class MessageFactory:
     def __init__(self, channels: ChannelRegistry):
         self.grouped_messages = {}
         self.messages = []
         self.channels = channels
+        self.commands = {}
+        self.create_commands()
+
+    def create_commands(self):
+        self.commands[Commands.CreateMessage] = self._create_message
 
     def create_message(self, event) -> Optional[ChannelMessage]:
+        if event.message.text.startswith(Commands.Command):
+            pass
         if event.message.grouped_id:
             gid = event.message.grouped_id
             if gid in self.grouped_messages:
                 self.grouped_messages[gid].add_message(event.message)
                 return None
             else:
-                self.grouped_messages[gid] = self._create_message(event)
+                self.grouped_messages[gid] = self.commands[Commands.CreateMessage](event)
                 return self.grouped_messages[gid]
         else:
-            message = self._create_message(event)
+            message = self.commands[Commands.CreateMessage](event)
             return message
 
     def _create_message(self, event) -> ChannelMessage:

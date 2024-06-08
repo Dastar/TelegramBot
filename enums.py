@@ -23,4 +23,6 @@ class LogLevel(Enum):
 
 
 class Commands(str, Enum):
-    Delay = '/command: delay'
+    Command = '/command: '
+    CreateMessage = 'create message'
+    Delay = 'delay'
