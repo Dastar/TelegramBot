@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from telethon import Button
+from telethon.tl.types import MessageMediaWebPage
 
 from enums import LogLevel
 from helpers.helpers import Helpers
@@ -31,7 +32,7 @@ class ChannelMessage:
 
     def download_tg_media(self):
         for msg in self.messages:
-            if msg.media:
+            if msg.media and not isinstance(msg.media, MessageMediaWebPage):
                 self.media.append(msg.media)
 
     async def all_messages_received(self) -> bool:
