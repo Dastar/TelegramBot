@@ -1,6 +1,6 @@
-# Telegram Channel Translator Bot
+# Telegram ChatGPT Bot
 
-This bot listens to specific Telegram channels for new messages, translates those messages using ChatGPT, and sends the translated messages to another specified channel.
+This bot listens to specific Telegram channels for new messages, send those messages using ChatGPT with predifined roles, and sends the GPT respons to another specified channel.
 
 ## Features
 
@@ -10,11 +10,7 @@ This bot listens to specific Telegram channels for new messages, translates thos
 
 ## Requirements
 
-- Python 3.8+
-- `telethon` library
-- `openai` library
-- OpenAI API key
-- Telegram API key
+See requirements.txt file
 
 ## Installation
 
@@ -45,6 +41,7 @@ This bot listens to specific Telegram channels for new messages, translates thos
     BotConfig = configurations/dummy.yaml
     ForwardMessage = {name}:{line}{line}
     ```
+    - Make sure to properly define correct pathes for bot configuration file (see p4) and for session file (created by telethon).
 
 4. Set up your bot configuration file:
    - Create a `dummy.yaml` file in the \configuration folder.

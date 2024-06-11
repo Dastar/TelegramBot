@@ -45,4 +45,5 @@ class ChannelRegistry:
             return None
 
     def get_monitored(self):
-        return list(self.channels.keys())
+        sources = list(self.channels.keys())
+        return sources
