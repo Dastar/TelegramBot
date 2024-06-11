@@ -17,6 +17,7 @@ class MessageFactory:
 
     def create_message(self, event) -> Optional[ChannelMessage]:
         if event.message.text.startswith(Commands.Command):
+            logger.log(LogLevel.Debug, 'Command message received')
             return self._create_command(event)
         if event.message.grouped_id:
             gid = event.message.grouped_id

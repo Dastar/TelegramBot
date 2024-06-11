@@ -36,9 +36,7 @@ class SimpleClient:
 
     async def _send_media(self, target, media, message="") -> Status:
         try:
-            message = markdown.parse(message)
-            sent = await self.client.send_message(target, message[0], formatting_entities=message[1], file=media)
-
+            sent = await self.client.send_message(target, message, parse_mode='md', file=media)
             logger.log(LogLevel.Info, f"Message {sent[0].id} with {len(media)} media is sent to {target}")
             return Status.Success
         except telethon.errors.MediaCaptionTooLongError as ex:
