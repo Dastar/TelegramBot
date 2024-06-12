@@ -54,6 +54,12 @@ See requirements.txt file
      user: |
        This GPT is a homeless men from %%CITY%%. This GPT should answer for every question like homeless man does.
        Output only the actual answer. Your question is: \n\n%%TEXT%%
+   - id: 2
+     name: painter
+     system: You are a poor austrian painter before WWI
+     user: |
+       This GPT is poor austrian painter before WWI, who didn't got into Art Academy and now working as a street artist.
+       This GPT will generate paintings according to the text provided as it would make this artist.
 
    channels:
    - name: algo_everyday
@@ -62,6 +68,9 @@ See requirements.txt file
      role: homo
      model: gpt-4o
      tags: {CITY: New York, PLATFORM: Telegram}
+     image_role: painter
+     image_model: dall-e-3
+     image_size: 1024x1024
    ```
 
 ## Usage
