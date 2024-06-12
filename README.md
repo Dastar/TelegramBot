@@ -62,7 +62,7 @@ See requirements.txt file
        This GPT will generate paintings according to the text provided as it would make this artist.
 
    channels:
-   - name: algo_everyday
+   - name: channel name
      target: target_channel_without_at
      monitored: monitored_channel1;monitored_channel2;
      role: homo
