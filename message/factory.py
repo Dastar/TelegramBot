@@ -18,7 +18,7 @@ class MessageFactory:
         self.commands = {}
         self.queue = asyncio.Queue(maxsize=1)
 
-    def create_message(self, event) -> Optional[ChannelMessage]:
+    def create_message(self, event, new_text=None) -> Optional[ChannelMessage]:
         if self.is_command(event.message.text):
             logger.log(LogLevel.Debug, 'Command message received')
             return self._create_command(event)

@@ -1,4 +1,5 @@
 import logging
+from collections import deque
 from enums import LogLevel
 
 
@@ -28,6 +29,8 @@ class Logger:
             LogLevel.Critical: self.logger.critical
         }
 
+        self.deque = deque(maxlen=15)
+
     def get_logger(self):
         return self.logger
 
@@ -45,5 +48,9 @@ class Logger:
         handler.setFormatter(self.formatter)
         self.logger.addHandler(handler)
 
+    def get_log(self):
+        return '\n'.join(self.deque)
+
     def log(self, level, msg):
         self.writers[level](msg)
+        self.deque.append(f"{level}: {msg}")

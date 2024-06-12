@@ -30,6 +30,12 @@ class MessageHandler:
                 logger.log(LogLevel.Warning, f'Error: command queue is full.')
 
             return
+        elif event.message.text.startswith(Commands.GetLog):
+            message = self.message_pool.create_message(event)
+            message.output_text = logger.get_log()
+            message.channel.target = event.chat.username
+            await self.client.send(message)
+            return
 
         message = self.message_pool.create_message(event)
         if message is None:
