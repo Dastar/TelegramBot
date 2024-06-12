@@ -1,3 +1,6 @@
+import asyncio
+
+from enums import Commands
 from logger import LogLevel
 from setup import logger
 from ai_client.ai_client import AIClient
@@ -19,6 +22,15 @@ class MessageHandler:
 
     async def handle_new_message(self, event):
         """Handle new incoming messages."""
+        if event.message.text.startswith(Commands.GenerateImage):
+            try:
+                self.message_pool.queue.put_nowait(Commands.GenerateImage)
+                logger.log(LogLevel.Info, f'Got image generating command. Next post will appear with generated image')
+            except asyncio.QueueFull:
+                logger.log(LogLevel.Warning, f'Error: command queue is full.')
+
+            return
+
         message = self.message_pool.create_message(event)
         if message is None:
             return
@@ -41,19 +53,20 @@ class MessageHandler:
             return data
         return ''
 
-    async def process_message(self, message):
+    async def process_message(self, message: ChannelMessage):
         """Process message content and media."""
 
         await self._wait_for_grouped_messages(message)
         message.download_tg_media()
 
-        text = message.get_text()
+        text = message.get_message_text()
         if text.strip():
             logger.log(LogLevel.Debug, 'Got message with text')
-            message.output_text, code_blocks = Helpers.extract_code_blocks(text)
-            translated_text = await self.ai_client.run_model(message.output_text, message.channel)
-            translated_text = Helpers.insert_code_blocks(translated_text, code_blocks)
-            message.output_text = f"\u202B{translated_text}\u202C"
+            message.output_text, message.code_blocks = Helpers.extract_code_blocks(text)
+
+        await self.ai_client.run(message)
+        message.output_text = Helpers.insert_code_blocks(message.get_text(), message.code_blocks)
+        message.output_text = f"\u202B{message.output_text}\u202C"
 
         message.get_forward_name(self.forwarded_message)
 

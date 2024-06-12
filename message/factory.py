@@ -1,3 +1,5 @@
+import asyncio
+from datetime import timedelta
 from typing import Optional
 
 from telethon import Button
@@ -14,9 +16,10 @@ class MessageFactory:
         self.messages = []
         self.channels = channels
         self.commands = {}
+        self.queue = asyncio.Queue(maxsize=1)
 
     def create_message(self, event) -> Optional[ChannelMessage]:
-        if event.message.text.startswith(Commands.Command):
+        if self.is_command(event.message.text):
             logger.log(LogLevel.Debug, 'Command message received')
             return self._create_command(event)
         if event.message.grouped_id:
@@ -33,25 +36,50 @@ class MessageFactory:
             logger.log(LogLevel.Debug, f"Got new message for {message.channel.target}")
             return message
 
-    def _create_message(self, event, delay='') -> ChannelMessage:
+    @staticmethod
+    def is_command(text: str) -> bool:
+        if text.startswith(Commands.Command) or text.startswith(Commands.Delay) or text.startswith(Commands.GenerateImage):
+            return True
+        return False
+
+    def get_command(self):
+        if not self.queue.empty():
+            try:
+                command = self.queue.get_nowait()
+                return command
+            except asyncio.QueueEmpty:
+                return None
+
+    def _create_message(self, event) -> ChannelMessage:
         msg = event.message
         channel = self.channels.get_channel(event.chat.username)
         if channel is None:
             logger.log(LogLevel.Error, f'Target for {event.chat.username} not found.')
             raise Exception(f'Target for {event.chat.username} not found.')
 
-        message = ChannelMessage(msg, channel, delay)
+        command = self.get_command()
+        delay = None
+        generate_image = False
+        if command and command[0] == Commands.Delay:
+            logger.log(LogLevel.Info, 'Got delayed message')
+            delay = timedelta(minutes=int(command[1]))
+        if command == Commands.GenerateImage:
+            logger.log(LogLevel.Info, 'Got generating image command')
+            generate_image = True
+
+        message = ChannelMessage(msg, channel, generate_image)
         return message
 
     def _create_command(self, event) -> ChannelMessage:
-        buttons = [
-            [Button.inline('Do Nothing', b'')],
-            [Button.inline('Restart', b'restart')]
-        ]
-        channel = Channel(event.chat.username, None, None, None)
-        message = ChannelMessage(event.message, channel, buttons=buttons)
-        message.output_text = 'Command Menu'
-        return message
+        return None
+        # buttons = [
+        #     [Button.inline('Do Nothing', b'')],
+        #     [Button.inline('Restart', b'restart')]
+        # ]
+        # channel = Channel(event.chat.username, None, None, None)
+        # message = ChannelMessage(event.message, channel, buttons=buttons)
+        # message.output_text = 'Command Menu'
+        # return message
 
     def remove_message(self, gid):
         if gid is not None:
