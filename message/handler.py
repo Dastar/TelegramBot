@@ -33,7 +33,7 @@ class MessageHandler:
         elif event.message.text.startswith(Commands.GetLog):
             message = self.message_pool.create_message(event)
             message.output_text = logger.get_log()
-            message.channel.target = event.chat.username
+            message.set_temp_target(event.chat.username)
             await self.client.send(message)
             return
 
