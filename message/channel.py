@@ -27,6 +27,7 @@ class ChannelMessage:
         self.send_text = True
         self.generate_image = generate_image
         self.code_blocks = None
+        self.temp_target = None
 
     def __del__(self):
         for m in self.media:
@@ -88,7 +89,14 @@ class ChannelMessage:
         self.output_text = forwarded_message.replace('{name}', name).replace('{line}', '\n') + self.output_text
 
     def get_target(self):
+        if self.temp_target:
+            temp = self.temp_target
+            self.temp_target = None
+            return temp
         return self.channel.target
+
+    def set_temp_target(self, target):
+        self.temp_target = target
 
     def get_sender(self):
         return self.messages[0].chat.username
