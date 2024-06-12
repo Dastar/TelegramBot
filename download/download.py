@@ -1,0 +1,1 @@
+# Nothing here for now. Created only to create this folder in the git. Will be deleted in the future
