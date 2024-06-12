@@ -26,3 +26,4 @@ class Commands(str, Enum):
     Command = '/command'
     Delay = '/delay'
     GenerateImage = '/image'
+    GetLog = '/log'
