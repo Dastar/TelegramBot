@@ -33,7 +33,7 @@ class Role:
     def from_text(self, text: str):
         lines = text.split('===')
         lines = [line.split(':', maxsplit=1) for line in lines]
-        d = {key.strip(): value for key, value in lines}
+        d = {key.strip(): value.strip() for key, value in lines}
         self.system = AIMessage('system', d['system'])
         self.user = AIMessage('user', d['user'])
         self.init_tags()
