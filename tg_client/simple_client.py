@@ -71,6 +71,16 @@ class SimpleClient:
             logger.log(LogLevel.Error, f"Error sending media to {target}: {ex}")
             return Status.Error
 
+    async def send_text(self, target, text):
+        try:
+            sent = await self.client.send_message(target,
+                                                  text)
+            logger.log(LogLevel.Info, f"Text sent to {target}")
+            return Status.Success
+        except Exception as ex:
+            logger.log(LogLevel.Error, f"Error sending text to {target}: {ex}")
+            return Status.Error
+
     async def _send_buttons(self, target, message, buttons):
         try:
             sent = await self.client.send_message(target, message, parse_mode='md', buttons=buttons)

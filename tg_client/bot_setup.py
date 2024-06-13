@@ -53,6 +53,11 @@ async def run_client(config, aiclient, channels):
                 restart_event.set()
                 stop_event.set()
 
+        @client.on(events.MessageEdited)
+        async def handle_edited_messages(event):
+            logger.log(LogLevel.Debug, f'Editing message with id {event.message.id} from {event.chat.username}')
+            await message_handler.handle_edited_messages(event)
+
         loop = asyncio.get_running_loop()
         setup_signal_handling(loop, stop_event)
 

@@ -42,7 +42,7 @@ class ChannelRegistry:
         for m in monitored:
             self.add_channel(m, channel)
 
-    def get_channel(self, monitored):
+    def get_channel(self, monitored) -> Optional[Channel]:
         if monitored in self.channels:
             return self.channels[monitored]
         elif f'@{monitored}' in self.channels:

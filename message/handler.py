@@ -19,6 +19,7 @@ class MessageHandler:
         self.ai_client = ai_client
         self.message_pool = MessageFactory(channels)
         self.forwarded_message = config['forward_message']
+        self.channels = channels
 
     async def handle_new_message(self, event):
         """Handle new incoming messages."""
@@ -35,6 +36,11 @@ class MessageHandler:
             message.output_text = logger.get_log()
             message.set_temp_target(event.chat.username)
             await self.client.send(message)
+            return
+        elif event.message.text.startswith('/role'):
+            channel = self.channels.get_channel(event.chat.username)
+            role = str(channel.role)
+            await self.client.send_text(event.chat.username, role)
             return
 
         message = self.message_pool.create_message(event)
@@ -84,3 +90,11 @@ class MessageHandler:
                 logger.log(LogLevel.Error, 'Failed to receive all grouped messages.')
         self.message_pool.remove_message(message.grouped_id)
 
+    async def handle_edited_messages(self, event):
+        logger.log(LogLevel.Debug, "Handling edited message")
+        if not event.message.text.startswith('/role'):
+            return
+
+        channel = self.channels.get_channel(event.chat.username)
+        logger.log(LogLevel.Debug, f"Editing role {channel.role.name}")
+        channel.role.from_text(event.message.text)
