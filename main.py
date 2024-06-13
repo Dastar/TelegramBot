@@ -2,7 +2,7 @@ import asyncio
 
 from logger import LogLevel
 from setup import CONFIGS, logger
-from bot_setup import initialize_clients, setup_channels, run_client
+from tg_client.bot_setup import initialize_clients, setup_channels, run_client
 
 
 def main():

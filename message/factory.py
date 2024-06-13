@@ -2,10 +2,8 @@ import asyncio
 from datetime import timedelta
 from typing import Optional
 
-from telethon import Button
-
 from message.channel import ChannelMessage
-from channel_registry import ChannelRegistry, Channel
+from tg_client.channel_registry import ChannelRegistry
 from enums import Commands, LogLevel
 from setup import logger
 

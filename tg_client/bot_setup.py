@@ -5,7 +5,7 @@ from openai import OpenAI
 from configuration_readers.data_reader import DataReader
 from configuration_readers.role_reader import RoleReader
 from ai_client.ai_client import AIClient
-from channel_registry import ChannelRegistry
+from tg_client.channel_registry import ChannelRegistry
 from configuration_readers.channel_reader import ChannelReader
 from logger import LogLevel
 from setup import logger

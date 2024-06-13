@@ -4,8 +4,8 @@ from enums import Commands
 from logger import LogLevel
 from setup import logger
 from ai_client.ai_client import AIClient
-from channel_registry import ChannelRegistry
-from simple_client import SimpleClient
+from tg_client.channel_registry import ChannelRegistry
+from tg_client.simple_client import SimpleClient
 from helpers.helpers import Helpers
 
 from message.factory import MessageFactory

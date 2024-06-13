@@ -1,5 +1,5 @@
 from configuration_readers.data_reader import DataReader
-from channel_registry import Channel
+from tg_client.channel_registry import Channel
 from configuration_readers.role_reader import RoleReader
 
 
