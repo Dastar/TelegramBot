@@ -35,7 +35,8 @@ class TelegramBot:
                                                   self.message_pool,
                                                   self.channels,
                                                   self.config['forward_message'],
-                                                  self.role_reader)
+                                                  self.role_reader,
+                                                  self.channel_reader)
         self.message_processor = MessageProcessor(self.aiclient, self.message_pool, self.config['forward_message'])
         self._register_commands()
 
@@ -75,6 +76,11 @@ class TelegramBot:
         logger.log(LogLevel.Debug, f"Translated text: {message.output_text}")
         await self.client.send(message)
         logger.log(LogLevel.Debug, "Exiting handle_new_message")
+
+    async def handle_restart_event(self, event):
+        # await event.answer('Restarting')
+        self.restart_event.set()
+        self.stop_event.set()
 
     async def handle_callback_query(self, event):
         """Handle button interactions."""

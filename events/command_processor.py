@@ -1,17 +1,21 @@
 import asyncio
+
+from configuration_readers.channel_reader import ChannelReader
+from configuration_readers.role_reader import RoleReader
 from logger import LogLevel
 from setup import logger
 from events.channel import ChannelMessage
 
 
 class CommandProcessor:
-    def __init__(self, client, message_pool, channels, forwarded_message, role_reader):
+    def __init__(self, client, message_pool, channels, forwarded_message, role_reader: RoleReader, channel_reader: ChannelReader):
         self.client = client
         self.message_pool = message_pool
         self.channels = channels
         self.forwarded_message = forwarded_message
         self.commands = {}
         self.role_reader = role_reader
+        self.channel_reader = channel_reader
 
     def register_command(self, command, handler):
         """Register a new command handler."""
@@ -45,7 +49,16 @@ class CommandProcessor:
         """Handle the /role command."""
         logger.log(LogLevel.Info, "Got edit role command")
 
+        command = event.message.text.split(' ')
         channel = self.channels.get_channel(event.chat.username)
+
+        if len(command) > 1:
+            new_role = self.role_reader.get_role(command[1])
+            if new_role is None:
+                logger.log(LogLevel.Error, f'Role with name {command[1]} not found')
+            else:
+                logger.log(LogLevel.Info, f'Registering new role for channel {channel.target}')
+                channel.init_role(new_role)
         role = str(channel.role)
         await self.client.send_text(event.chat.username, role)
 
@@ -53,6 +66,7 @@ class CommandProcessor:
         """Handle the /save command."""
 
         channel = self.channels.get_channel(event.chat.username)
+        self.channel_reader.save(channel)
         # Implement save logic here
         logger.log(LogLevel.Info, f"Save command received for channel {channel.target}")
         self.role_reader.save(channel.role)

@@ -17,6 +17,12 @@ class ChannelReader:
         image_role = self.role_reader.get_role(data['image_role'])
         image_model = data['image_model']
         size = data['image_size']
-        channel = Channel(f'@{data['target']}', role, data['tags'], data['model'], image_role, image_model, size)
+        channel = Channel(data['name'], f'@{data['target']}', role, data['tags'], data['model'], image_role, image_model, size)
         sources = [f'@{m}' for m in data['monitored'].split(';') if m.strip()]
         return channel, sources
+
+    def save(self, channel: Channel):
+        def updater(data):
+            data['role'] = channel.role.name
+            return True
+        self.reader.save('channels', channel.name, updater)
