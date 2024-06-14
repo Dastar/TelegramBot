@@ -5,12 +5,15 @@ import asyncio
 from configuration_readers.data_reader import DataReader
 from configuration_readers.role_reader import RoleReader
 from ai_client.ai_client import AIClient
+from events.command_processor import CommandProcessor
+from events.factory import MessageFactory
+from events.message_processor import MessageProcessor
 from tg_client.channel_registry import ChannelRegistry
 from configuration_readers.channel_reader import ChannelReader
 from logger import LogLevel
 from setup import logger
-from events.event_handler import EventHandler
 from setup import setup_signal_handling
+from tg_client.simple_client import SimpleClient
 
 
 class TelegramBot:
@@ -25,8 +28,26 @@ class TelegramBot:
         self.channels = self._setup_channels()
         self.stop_event = asyncio.Event()
         self.restart_event = asyncio.Event()
-        self.client = TelegramClient(self.config['session_name'], self.config['api_id'], self.config['api_hash'])
-        self.message_handler = None
+        self.client = SimpleClient(self.config, 'md')
+
+        self.message_pool = MessageFactory(self.channels)
+        self.command_processor = CommandProcessor(self.client,
+                                                  self.message_pool,
+                                                  self.channels,
+                                                  self.config['forward_message'],
+                                                  self.role_reader)
+        self.message_processor = MessageProcessor(self.aiclient, self.message_pool, self.config['forward_message'])
+        self._register_commands()
+
+    def _register_commands(self):
+        """Register command handlers."""
+        self.register_command('/image', self.command_processor.generate_image_command)
+        self.register_command('/log', self.command_processor.get_log_command)
+        self.register_command('/role', self.command_processor.role_command)
+        self.register_command('/save', self.command_processor.save_command)
+
+    def register_command(self, command, handler):
+        self.command_processor.register_command(command, handler)
 
     def _setup_channels(self):
         """Set up channel registry and readers."""
@@ -37,27 +58,46 @@ class TelegramBot:
         return channels
 
     async def handle_new_message(self, event):
-        await self.message_handler.handle_new_message(event)
+        """Handle new incoming messages."""
+        text = event.message.text.split()[0] if event.message.text.strip() else ''
+        if text in self.command_processor.commands:
+            await self.command_processor.execute_command(text, event)
+        else:
+            await self._handle_generic_message(event)
+
+    async def _handle_generic_message(self, event):
+        """Handle generic messages."""
+        message = self.message_pool.create_message(event)
+        if message is None:
+            return
+
+        await self.message_processor.process_message(message)
+        logger.log(LogLevel.Debug, f"Translated text: {message.output_text}")
+        await self.client.send(message)
+        logger.log(LogLevel.Debug, "Exiting handle_new_message")
 
     async def handle_callback_query(self, event):
-        answer = await self.message_handler.handle_buttons(event)
-        if answer == 'restart':
+        """Handle button interactions."""
+        data = event.data.decode('utf-8')
+        if data == 'restart':
+            await event.answer('Restarting')
             self.restart_event.set()
             self.stop_event.set()
 
     async def handle_edited_messages(self, event):
-        logger.log(LogLevel.Debug, f'Editing message with id {event.message.id} from {event.chat.username}')
-        await self.message_handler.handle_edited_messages(event)
+        """Handle edited messages."""
+        logger.log(LogLevel.Debug, "Handling edited message")
+        if not event.message.text.startswith('/role'):
+            return
+
+        channel = self.channels.get_channel(event.chat.username)
+        logger.log(LogLevel.Debug, f"Editing role {channel.role.name}")
+        channel.role.from_text(event.message.text)
 
     def setup_event_handlers(self):
-        self.client.on(events.NewMessage(chats=self.channels.get_monitored()))(self.handle_new_message)
-        self.client.on(events.CallbackQuery())(self.handle_callback_query)
-        self.client.on(events.MessageEdited())(self.handle_edited_messages)
-
-    async def start_client(self):
-        self.message_handler = EventHandler(self.client, self.aiclient, self.channels, self.config)
-        await self.client.start()
-        logger.log(LogLevel.Info, 'Client started successfully')
+        self.client.set_up_handler(events.NewMessage(chats=self.channels.get_monitored()), self.handle_new_message)
+        self.client.set_up_handler(events.CallbackQuery(), self.handle_callback_query)
+        self.client.set_up_handler(events.MessageEdited(), self.handle_edited_messages)
 
     async def stop_client(self):
         if self.client.is_connected():
@@ -73,7 +113,8 @@ class TelegramBot:
         setup_signal_handling(loop, self.stop_event)
 
         try:
-            await self.start_client()
+            await self.client.start()
+            logger.log(LogLevel.Info, 'Client started successfully')
             self.setup_event_handlers()
             await self.stop_event.wait()
             logger.log(LogLevel.Info, 'Stop event received, shutting down...')

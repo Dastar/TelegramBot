@@ -1,4 +1,5 @@
 import telethon
+from telethon import TelegramClient
 
 from events.channel import ChannelMessage
 from logger import LogLevel
@@ -14,9 +15,21 @@ class Status(Enum):
 
 
 class SimpleClient:
-    def __init__(self, client: telethon.TelegramClient, parse_mode: str):
-        self.client = client
+    def __init__(self, config, parse_mode: str):
+        self.client = TelegramClient(config['session_name'], config['api_id'], config['api_hash'])
         self.parse_mode = parse_mode
+
+    def set_up_handler(self, event, handler):
+        self.client.on(event)(handler)
+
+    def is_connected(self):
+        return self.client.is_connected()
+
+    async def disconnect(self):
+        await self.client.disconnect()
+
+    async def start(self):
+        await self.client.start()
 
     async def send(self, message: ChannelMessage):
         if message.media:

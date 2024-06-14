@@ -5,12 +5,13 @@ from events.channel import ChannelMessage
 
 
 class CommandProcessor:
-    def __init__(self, client, message_pool, channels, forwarded_message):
+    def __init__(self, client, message_pool, channels, forwarded_message, role_reader):
         self.client = client
         self.message_pool = message_pool
         self.channels = channels
         self.forwarded_message = forwarded_message
         self.commands = {}
+        self.role_reader = role_reader
 
     def register_command(self, command, handler):
         """Register a new command handler."""
