@@ -37,3 +37,14 @@ class DataReader:
         data = self.get_data(section)
         for d in data:
             yield func(d)
+
+    def save(self, section, tag, func):
+        data = self.get_data(section)
+        success = False
+        for d in data:
+            if d['name'] == tag:
+                success = func(d)
+        if success:
+            with open(self.file_path, 'w') as file:
+                yaml.safe_dump(self.data, file)
+

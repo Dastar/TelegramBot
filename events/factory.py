@@ -2,10 +2,8 @@ import asyncio
 from datetime import timedelta
 from typing import Optional
 
-from telethon import Button
-
-from message.channel import ChannelMessage
-from channel_registry import ChannelRegistry, Channel
+from events.channel import ChannelMessage
+from tg_client.channel_registry import ChannelRegistry
 from enums import Commands, LogLevel
 from setup import logger
 
@@ -19,9 +17,6 @@ class MessageFactory:
         self.queue = asyncio.Queue(maxsize=1)
 
     def create_message(self, event) -> Optional[ChannelMessage]:
-        if self.is_command(event.message.text):
-            logger.log(LogLevel.Debug, 'Command message received')
-            return self._create_command(event)
         if event.message.grouped_id:
             gid = event.message.grouped_id
             if gid in self.grouped_messages:
@@ -35,12 +30,6 @@ class MessageFactory:
             message = self._create_message(event)
             logger.log(LogLevel.Debug, f"Got new message for {message.channel.target}")
             return message
-
-    @staticmethod
-    def is_command(text: str) -> bool:
-        if text.startswith(Commands.Command) or text.startswith(Commands.Delay) or text.startswith(Commands.GenerateImage):
-            return True
-        return False
 
     def get_command(self):
         if not self.queue.empty():
@@ -69,17 +58,6 @@ class MessageFactory:
 
         message = ChannelMessage(msg, channel, generate_image)
         return message
-
-    def _create_command(self, event) -> ChannelMessage:
-        return None
-        # buttons = [
-        #     [Button.inline('Do Nothing', b'')],
-        #     [Button.inline('Restart', b'restart')]
-        # ]
-        # channel = Channel(event.chat.username, None, None, None)
-        # message = ChannelMessage(event.message, channel, buttons=buttons)
-        # message.output_text = 'Command Menu'
-        # return message
 
     def remove_message(self, gid):
         if gid is not None:

@@ -5,9 +5,11 @@ from ai_client.role import Role
 
 
 class Channel:
-    def __init__(self, target, role: Optional[Role], tags, model, image_role: Optional[Role], image_model, image_size):
+    def __init__(self, name, target, role: Optional[Role], tags, model, image_role: Optional[Role], image_model, image_size):
+        self.name = name
         self.target = target
         self.role = role
+        self.tags = tags
         if self.role:
             self.role.init_tags(tags)
         self.model = model
@@ -15,9 +17,9 @@ class Channel:
         self.image_model = image_model
         self.image_size = image_size
 
-    def init_role(self, role: Role, tags):
+    def init_role(self, role: Role):
         self.role = role
-        self.role.init_tags(tags)
+        self.role.init_tags(self.tags)
 
     def get_message(self, text):
         return self.role.create_message(text)
@@ -42,7 +44,7 @@ class ChannelRegistry:
         for m in monitored:
             self.add_channel(m, channel)
 
-    def get_channel(self, monitored):
+    def get_channel(self, monitored) -> Optional[Channel]:
         if monitored in self.channels:
             return self.channels[monitored]
         elif f'@{monitored}' in self.channels:

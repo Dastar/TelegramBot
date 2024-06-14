@@ -6,7 +6,11 @@ class AIMessage:
         self.role = role
         self.content = content
         self.edited_content = ''
+        self.original_content = content
         # self.tags = re.findall(r'%%.*?%%', content)
+
+    def __str__(self):
+        return f"{self.role}: {self.original_content}"
 
     def clear(self):
         self.edited_content = ''

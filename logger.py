@@ -18,7 +18,7 @@ class Logger:
         self.level = log_levels[level]
 
         # Create a formatter and set it for both handlers
-        self.formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        # self.formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         self.formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
         self.writers = {
@@ -53,4 +53,4 @@ class Logger:
 
     def log(self, level, msg):
         self.writers[level](msg)
-        self.deque.append(f"{level}: {msg}")
+        self.deque.append(f"**{str(level).split('.')[-1]}**: {msg}")

@@ -1,6 +1,7 @@
 import telethon
+from telethon import TelegramClient
 
-from message.channel import ChannelMessage
+from events.channel import ChannelMessage
 from logger import LogLevel
 from setup import logger
 from enums import Enum
@@ -14,9 +15,21 @@ class Status(Enum):
 
 
 class SimpleClient:
-    def __init__(self, client: telethon.TelegramClient, parse_mode: str):
-        self.client = client
+    def __init__(self, config, parse_mode: str):
+        self.client = TelegramClient(config['session_name'], config['api_id'], config['api_hash'])
         self.parse_mode = parse_mode
+
+    def set_up_handler(self, event, handler):
+        self.client.on(event)(handler)
+
+    def is_connected(self):
+        return self.client.is_connected()
+
+    async def disconnect(self):
+        await self.client.disconnect()
+
+    async def start(self):
+        await self.client.start()
 
     async def send(self, message: ChannelMessage):
         if message.media:
@@ -69,6 +82,16 @@ class SimpleClient:
             return Status.MediaCaptionTooLong
         except Exception as ex:
             logger.log(LogLevel.Error, f"Error sending media to {target}: {ex}")
+            return Status.Error
+
+    async def send_text(self, target, text):
+        try:
+            sent = await self.client.send_message(target,
+                                                  text)
+            logger.log(LogLevel.Info, f"Text sent to {target}")
+            return Status.Success
+        except Exception as ex:
+            logger.log(LogLevel.Error, f"Error sending text to {target}: {ex}")
             return Status.Error
 
     async def _send_buttons(self, target, message, buttons):

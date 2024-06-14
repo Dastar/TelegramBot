@@ -2,16 +2,15 @@ import asyncio
 
 from logger import LogLevel
 from setup import CONFIGS, logger
-from bot_setup import initialize_clients, setup_channels, run_client
+from tg_client.telegram_bot import TelegramBot
 
 
 def main():
     """Main function to run the program."""
     config = CONFIGS.read_configuration()
-    aiclient = initialize_clients(config)
-    channels = setup_channels(config)
+    bot = TelegramBot(config)
 
-    return asyncio.run(run_client(config, aiclient, channels))
+    return asyncio.run(bot.run_client())
 
 
 if __name__ == '__main__':

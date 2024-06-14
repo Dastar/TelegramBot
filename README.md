@@ -62,7 +62,7 @@ See requirements.txt file
        This GPT will generate paintings according to the text provided as it would make this artist.
 
    channels:
-   - name: algo_everyday
+   - name: channel name
      target: target_channel_without_at
      monitored: monitored_channel1;monitored_channel2;
      role: homo
@@ -81,6 +81,12 @@ See requirements.txt file
     ```
 
 2. The bot will start listening to the specified Telegram channels. When a new message appears, it will be translated and sent to the target channel.
+3. The bot has commands for execution:
+   * /image - for the next sent message will be added generated image using image_role key from the channel configuration.
+   * /log - send to monitored channel last 15 messages from the log file
+   * /role [name] - returns the current role of the channel. If [name] specified, role with the [name] will be attached to the role. Editing role is enabled 
+   * /save - saving edited role
+   
 
 ## Configuration
 
