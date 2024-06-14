@@ -84,6 +84,8 @@ See requirements.txt file
 3. The bot has commands for execution:
    * /image - for the next sent message will be added generated image using image_role key from the channel configuration.
    * /log - send to monitored channel last 15 messages from the log file
+   * /role [name] - returns the current role of the channel. If [name] specified, role with the [name] will be attached to the role. Editing role is enabled 
+   * /save - saving edited role
    
 
 ## Configuration
