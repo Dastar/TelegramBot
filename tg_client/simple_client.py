@@ -1,6 +1,6 @@
 import telethon
 
-from message.channel import ChannelMessage
+from events.channel import ChannelMessage
 from logger import LogLevel
 from setup import logger
 from enums import Enum

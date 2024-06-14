@@ -2,7 +2,7 @@ import asyncio
 from datetime import timedelta
 from typing import Optional
 
-from message.channel import ChannelMessage
+from events.channel import ChannelMessage
 from tg_client.channel_registry import ChannelRegistry
 from enums import Commands, LogLevel
 from setup import logger

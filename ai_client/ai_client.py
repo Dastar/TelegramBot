@@ -2,9 +2,10 @@ import asyncio
 import time
 import aiohttp
 import openai
+from openai import OpenAI
 
 from logger import LogLevel
-from message.channel import ChannelMessage
+from events.channel import ChannelMessage
 from setup import logger
 
 
@@ -13,8 +14,8 @@ def format_content(content: str, tag, text):
 
 
 class AIClient:
-    def __init__(self, client: openai.OpenAI):
-        self.client = client
+    def __init__(self, api_key):
+        self.client = OpenAI(api_key=api_key)
 
     async def run(self, message: ChannelMessage):
         logger.log(LogLevel.Debug, 'Running AI model')
