@@ -34,6 +34,8 @@ class CommandProcessor:
 
     async def get_log_command(self, event):
         """Handle the /get_log command."""
+        logger.log(LogLevel.Info, "Got log command")
+
         message = self.message_pool.create_message(event)
         message.output_text = logger.get_log()
         message.set_temp_target(event.chat.username)
@@ -41,12 +43,17 @@ class CommandProcessor:
 
     async def role_command(self, event):
         """Handle the /role command."""
+        logger.log(LogLevel.Info, "Got edit role command")
+
         channel = self.channels.get_channel(event.chat.username)
         role = str(channel.role)
         await self.client.send_text(event.chat.username, role)
 
     async def save_command(self, event):
         """Handle the /save command."""
+
         channel = self.channels.get_channel(event.chat.username)
         # Implement save logic here
-        logger.log(LogLevel.Info, f"Save command received for channel {channel}")
+        logger.log(LogLevel.Info, f"Save command received for channel {channel.target}")
+        self.role_reader.save(channel.role)
+        logger.log(LogLevel.Info, f"Role {channel.role.name} saved")

@@ -9,14 +9,13 @@ class RoleReader:
     def get_role(self, name):
         return self.reader.get_attribute('roles', name, self.role_reader)
 
-    def save_role(self, role: Role):
-        def uptader(data):
-            data['system'] = role.system.original_content
-            data['user'] = role.user.original_content
+    def save(self, role: Role):
+        def updater(data):
+            data['system'] = role.system.original_content.strip()
+            data['user'] = role.user.original_content.strip()
             return True
 
-        self.reader.save('roles', role.name, uptader)
-
+        self.reader.save('roles', role.name, updater)
 
     @staticmethod
     def role_reader(data):
