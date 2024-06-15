@@ -10,6 +10,7 @@ from events.factory import MessageFactory
 from events.message_processor import MessageProcessor
 from tg_client.channel_registry import ChannelRegistry
 from configuration_readers.channel_reader import ChannelReader
+from events.message_queue import MessageQueue
 from logger import LogLevel
 from setup import logger
 from setup import setup_signal_handling
@@ -34,11 +35,12 @@ class TelegramBot:
         self.command_processor = CommandProcessor(self.client,
                                                   self.message_pool,
                                                   self.channels,
-                                                  self.config['forward_message'],
+                                                  self.config,
                                                   self.role_reader,
                                                   self.channel_reader)
-        self.message_processor = MessageProcessor(self.aiclient, self.message_pool, self.config['forward_message'])
+        self.message_processor = MessageProcessor(self.aiclient, self.message_pool, self.config)
         self._register_commands()
+        self.delayed = MessageQueue()
 
     def _register_commands(self):
         """Register command handlers."""
@@ -46,6 +48,7 @@ class TelegramBot:
         self.register_command('/log', self.command_processor.get_log_command)
         self.register_command('/role', self.command_processor.role_command)
         self.register_command('/save', self.command_processor.save_command)
+        self.register_command('/config', self.command_processor.config_command)
 
     def register_command(self, command, handler):
         self.command_processor.register_command(command, handler)
@@ -74,6 +77,10 @@ class TelegramBot:
 
         await self.message_processor.process_message(message)
         logger.log(LogLevel.Debug, f"Translated text: {message.output_text}")
+        if self.config['to_delay']:
+            logger.log(LogLevel.Info, 'The message is delayed. The original message sent to sender')
+            message.set_temp_target(event.chat.username)
+            await self.delayed.put(message)
         await self.client.send(message)
         logger.log(LogLevel.Debug, "Exiting handle_new_message")
 
@@ -93,17 +100,24 @@ class TelegramBot:
     async def handle_edited_messages(self, event):
         """Handle edited messages."""
         logger.log(LogLevel.Debug, "Handling edited message")
-        if not event.message.text.startswith('/role'):
+        if event.message.text.startswith('/role'):
+            channel = self.channels.get_channel(event.chat.username)
+            logger.log(LogLevel.Debug, f"Editing role {channel.role.name}")
+            channel.role.from_text(event.message.text)
+        message = await self.delayed.get(event.message.id)
+        if message is None:
             return
-
-        channel = self.channels.get_channel(event.chat.username)
-        logger.log(LogLevel.Debug, f"Editing role {channel.role.name}")
-        channel.role.from_text(event.message.text)
+        message.output_text = event.message.text
+        await self.client.send(message)
 
     def setup_event_handlers(self):
         self.client.set_up_handler(events.NewMessage(chats=self.channels.get_monitored()), self.handle_new_message)
         self.client.set_up_handler(events.CallbackQuery(), self.handle_callback_query)
         self.client.set_up_handler(events.MessageEdited(), self.handle_edited_messages)
+
+    # async def async_sender(self):
+    #     while not self.stop_event.is_set() or not self.restart_event.is_set():
+    #         message = self.delayed.
 
     async def stop_client(self):
         if self.client.is_connected():

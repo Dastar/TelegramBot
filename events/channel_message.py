@@ -1,14 +1,9 @@
 import asyncio
 import os
 import time
-from datetime import datetime
-from typing import List, Optional
-
-from telethon import Button
 from telethon.tl.types import MessageMediaWebPage
 
 from enums import LogLevel
-from helpers.helpers import Helpers
 from setup import logger
 
 
@@ -16,6 +11,7 @@ class ChannelMessage:
     def __init__(self, message, channel, generate_image=False):
         self.messages = [message]
         self.media = []
+        self.sent_id = []
         self.grouped_id = message.grouped_id
         self.forward = message.forward
         self.channel = channel

@@ -4,15 +4,20 @@ from configuration_readers.channel_reader import ChannelReader
 from configuration_readers.role_reader import RoleReader
 from logger import LogLevel
 from setup import logger
-from events.channel import ChannelMessage
+from events.channel_message import ChannelMessage
 
 
 class CommandProcessor:
-    def __init__(self, client, message_pool, channels, forwarded_message, role_reader: RoleReader, channel_reader: ChannelReader):
+    def __init__(self, client,
+                 message_pool,
+                 channels,
+                 configs,
+                 role_reader: RoleReader,
+                 channel_reader: ChannelReader):
         self.client = client
         self.message_pool = message_pool
         self.channels = channels
-        self.forwarded_message = forwarded_message
+        self.configs = configs
         self.commands = {}
         self.role_reader = role_reader
         self.channel_reader = channel_reader
@@ -71,3 +76,13 @@ class CommandProcessor:
         logger.log(LogLevel.Info, f"Save command received for channel {channel.target}")
         self.role_reader.save(channel.role)
         logger.log(LogLevel.Info, f"Role {channel.role.name} saved")
+
+    async def config_command(self, event):
+        command = event.message.text.split(' ')
+        if command[1].lower() == "delay":
+            self.configs['to_delay'] = not self.configs['to_delay']
+            logger.log(LogLevel.Info, f"Delay set to {self.configs['to_delay']}")
+        if command[1].lower() == 'forward':
+            self.configs['forward_message'] = ' '.join(command[2:])
+            logger.log(LogLevel.Info, f"Forwarded message set to {self.configs['forward_message']}")
+

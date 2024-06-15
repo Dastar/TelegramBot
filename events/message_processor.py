@@ -1,15 +1,15 @@
 import asyncio
 from helpers.helpers import Helpers
-from events.channel import ChannelMessage
+from events.channel_message import ChannelMessage
 from logger import LogLevel
 from setup import logger
 
 
 class MessageProcessor:
-    def __init__(self, ai_client, message_pool, forwarded_message):
+    def __init__(self, ai_client, message_pool, configs):
         self.ai_client = ai_client
         self.message_pool = message_pool
-        self.forwarded_message = forwarded_message
+        self.configs = configs
 
     async def process_message(self, message: ChannelMessage):
         """Process message content and media."""
@@ -25,7 +25,7 @@ class MessageProcessor:
         message.output_text = Helpers.insert_code_blocks(message.get_text(), message.code_blocks)
         message.output_text = f"\u202B{message.output_text}\u202C"
 
-        message.get_forward_name(self.forwarded_message)
+        message.get_forward_name(self.configs['forward_message'])
         return message
 
     async def _wait_for_grouped_messages(self, message: ChannelMessage):

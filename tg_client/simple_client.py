@@ -1,7 +1,7 @@
 import telethon
 from telethon import TelegramClient
 
-from events.channel import ChannelMessage
+from events.channel_message import ChannelMessage
 from logger import LogLevel
 from setup import logger
 from enums import Enum
@@ -76,6 +76,11 @@ class SimpleClient:
                                                   parse_mode='md',
                                                   file=media)
             logger.log(LogLevel.Info, f"Message sent to {target} with {len(media) if media else 0} media")
+            if isinstance(sent, list):
+                for s in sent:
+                    message.sent_id.append(s.id)
+            else:
+                message.sent_id.append(sent.id)
             return Status.Success
         except telethon.errors.MediaCaptionTooLongError as ex:
             logger.log(LogLevel.Error, f"Media caption too long")

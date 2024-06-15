@@ -5,7 +5,7 @@ import openai
 from openai import OpenAI
 
 from logger import LogLevel
-from events.channel import ChannelMessage
+from events.channel_message import ChannelMessage
 from setup import logger
 
 

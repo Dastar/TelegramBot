@@ -31,13 +31,13 @@ class Configurations:
     def read_configuration(self):
         """Read and set up configuration values."""
         os.environ['OPENAI_API_KEY'] = self.read(ConfigProperty.ApiKey)
-        api_id = self.read(ConfigProperty.ApiId)
-        api_hash = self.read(ConfigProperty.ApiHash)
+
         return {
             'api_key': self.read(ConfigProperty.ApiKey),
-            'api_id': api_id,
-            'api_hash': api_hash,
+            'api_id': self.read(ConfigProperty.ApiId),
+            'api_hash': self.read(ConfigProperty.ApiHash),
             'bot_config': self.read(ConfigProperty.BotConfig),
             'forward_message': self.read(ConfigProperty.ForwardMessage),
-            'session_name': self.read(ConfigProperty.SessionName)
+            'session_name': self.read(ConfigProperty.SessionName),
+            'to_delay': self.read('Delay') == 'True',
         }
