@@ -7,7 +7,7 @@ from tg_client.telegram_bot import TelegramBot
 
 def main():
     """Main function to run the program."""
-    config = CONFIGS.read_configuration()
+    config = CONFIGS.safe_read_configuration()
     bot = TelegramBot(config)
 
     return asyncio.run(bot.run_client())

@@ -2,7 +2,7 @@ import asyncio
 from datetime import timedelta
 from typing import Optional
 
-from events.channel import ChannelMessage
+from events.channel_message import ChannelMessage
 from tg_client.channel_registry import ChannelRegistry
 from enums import Commands, LogLevel
 from setup import logger
@@ -13,7 +13,6 @@ class MessageFactory:
         self.grouped_messages = {}
         self.messages = []
         self.channels = channels
-        self.commands = {}
         self.queue = asyncio.Queue(maxsize=1)
 
     def create_message(self, event) -> Optional[ChannelMessage]:
@@ -56,7 +55,7 @@ class MessageFactory:
             logger.log(LogLevel.Info, 'Got generating image command')
             generate_image = True
 
-        message = ChannelMessage(msg, channel, generate_image)
+        message = ChannelMessage(msg, event.chat.username, channel, generate_image)
         return message
 
     def remove_message(self, gid):

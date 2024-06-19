@@ -8,8 +8,7 @@ from logger import Logger, LogLevel
 
 CONFIGS = Configurations('configurations/config.ini').open()
 logger = Logger(CONFIGS.read(ConfigProperty.LogName),
-                CONFIGS.read(ConfigProperty.LogLevel),
-                CONFIGS.read(ConfigProperty.LogFormat)
+                CONFIGS.read(ConfigProperty.LogLevel)
                 )
 
 logger.set_file_handler(CONFIGS.read(ConfigProperty.LogFile))
