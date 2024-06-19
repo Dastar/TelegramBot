@@ -14,13 +14,17 @@ def format_content(content: str, tag, text):
 
 
 class AIClient:
-    def __init__(self, api_key):
+    def __init__(self, api_key, max_retries):
         self.client = OpenAI(api_key=api_key)
+        self.max_retries = max_retries
 
     async def run(self, message: ChannelMessage):
         logger.log(LogLevel.Debug, 'Running AI model')
-        content = await self.run_model(message.get_text(), message.channel)
+        content, result = await self.run_model(message.get_text(), message.channel)
         message.output_text = content
+        if not result:
+            message.to_sender()
+            return
         if message.generate_image:
             await self.generate_image(message)
 
@@ -28,20 +32,20 @@ class AIClient:
         logger.log(LogLevel.Debug, f"running text model {channel.model}")
 
         retry_count = 0
-        max_retries = 5
         backoff_factor = 2
 
         message = channel.get_message(text)
-        while retry_count < max_retries:
+        while retry_count < self.max_retries:
             try:
                 response = self.client.chat.completions.create(model=channel.model, messages=message)
                 content = response.choices[0].message.content.strip()
                 logger.log(LogLevel.Debug, "Got answer from OpenAi, returning")
-                return content
+                return content, True
             except openai.RateLimitError as e:
                 retry_count += 1
                 wait_time = backoff_factor ** retry_count
                 logger.log(LogLevel.Warning, f"Rate limit exceeded. Retrying in {wait_time} seconds...")
+                logger.log(LogLevel.Debug, f"The error is: {e}")
                 await asyncio.sleep(wait_time)
             except openai.OpenAIError as e:
                 logger.log(LogLevel.Error, f"An OpenAI error occurred: {e}")
@@ -50,7 +54,7 @@ class AIClient:
                 logger.log(LogLevel.Error, f"An unexpected error occurred: {e}")
                 break
 
-        raise Exception("Max retries exceeded for OpenAI API request")
+        return "Error: Max retries exceeded for OpenAI API request", False
 
     async def generate_image(self, message: ChannelMessage):
         channel = message.channel

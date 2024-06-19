@@ -28,6 +28,27 @@ class Configurations:
             output = [line for line in output if line.strip()]
         return output
 
+    def read_int(self, property_name):
+        try:
+            data = int(self.read(property_name))
+            return data
+        except Exception as e:
+            return 0
+
+    def read_bool(self, property_name):
+        try:
+            data = self.read(property_name) == 'True'
+            return data
+        except:
+            return False
+
+    def read_str(self, property_name):
+        try:
+            data = self.read(property_name)
+            return data
+        except:
+            return False
+
     def read_configuration(self):
         """Read and set up configuration values."""
         os.environ['OPENAI_API_KEY'] = self.read(ConfigProperty.ApiKey)
@@ -40,4 +61,20 @@ class Configurations:
             'forward_message': self.read(ConfigProperty.ForwardMessage),
             'session_name': self.read(ConfigProperty.SessionName),
             'to_delay': self.read('Delay') == 'True',
+            'max_retries': int(self.read('MaxGPTRetries'))
+        }
+
+    def safe_read_configuration(self):
+        """Read and set up configuration values."""
+        os.environ['OPENAI_API_KEY'] = self.read(ConfigProperty.ApiKey)
+
+        return {
+            'api_key': self.read_str(ConfigProperty.ApiKey),
+            'api_id': self.read_str(ConfigProperty.ApiId),
+            'api_hash': self.read_str(ConfigProperty.ApiHash),
+            'bot_config': self.read_str(ConfigProperty.BotConfig),
+            'forward_message': self.read_str(ConfigProperty.ForwardMessage),
+            'session_name': self.read_str(ConfigProperty.SessionName),
+            'to_delay': self.read_bool('Delay'),
+            'max_retries': self.read_int('MaxGPTRetries')
         }

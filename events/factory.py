@@ -55,7 +55,7 @@ class MessageFactory:
             logger.log(LogLevel.Info, 'Got generating image command')
             generate_image = True
 
-        message = ChannelMessage(msg, channel, generate_image)
+        message = ChannelMessage(msg, event.chat.username, channel, generate_image)
         return message
 
     def remove_message(self, gid):

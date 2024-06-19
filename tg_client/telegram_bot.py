@@ -20,7 +20,7 @@ from tg_client.simple_client import SimpleClient
 class TelegramBot:
     def __init__(self, config):
         self.config = config
-        self.aiclient = AIClient(self.config['api_key'])
+        self.aiclient = AIClient(self.config['api_key'], self.config['max_retries'])
 
         reader = DataReader(self.config['bot_config'])
         self.role_reader = RoleReader(reader)
@@ -39,6 +39,7 @@ class TelegramBot:
                                                   self.role_reader,
                                                   self.channel_reader)
         self.message_processor = MessageProcessor(self.aiclient, self.message_pool, self.config)
+        self.is_running = False
         self._register_commands()
         self.delayed = MessageQueue()
 
@@ -136,12 +137,14 @@ class TelegramBot:
             await self.client.start()
             logger.log(LogLevel.Info, 'Client started successfully')
             self.setup_event_handlers()
+            self.is_running = True
             await self.stop_event.wait()
             logger.log(LogLevel.Info, 'Stop event received, shutting down...')
         except Exception as e:
             logger.log(LogLevel.Error, f'An error occurred: {e}')
             return 'fail'
         finally:
+            self.is_running = False
             await self.stop_client()
 
         return 'restart' if self.restart_event.is_set() else 'success'
