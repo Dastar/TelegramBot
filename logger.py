@@ -4,7 +4,7 @@ from enums import LogLevel
 
 
 class Logger:
-    def __init__(self, name, level, formatter):
+    def __init__(self, name, level):
         self.logger = logging.getLogger(name)
         self.logger.setLevel(level)
 

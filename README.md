@@ -40,6 +40,8 @@ See requirements.txt file
     LogFormat = 
     BotConfig = configurations/dummy.yaml
     ForwardMessage = {name}:{line}{line}
+    Delay = False
+    MaxGPTRetries = 5
     ```
     - Make sure to properly define correct pathes for bot configuration file (see p4) and for session file (created by telethon).
 
