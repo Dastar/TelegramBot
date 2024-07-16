@@ -1,6 +1,7 @@
 from configuration_readers.data_reader import DataReader
 from tg_client.channel_registry import Channel
 from configuration_readers.role_reader import RoleReader
+from helpers.helpers import Helpers
 
 
 class ChannelReader:
@@ -18,8 +19,14 @@ class ChannelReader:
         image_model = data['image_model']
         size = data['image_size']
         channel = Channel(data['name'], f'@{data['target']}', role, data['tags'], data['model'], image_role, image_model, size)
-        sources = [f'@{m}' for m in data['monitored'].split(';') if m.strip()]
+        sources = [self._get_name(m) for m in data['monitored'].split(';') if m.strip()]
         return channel, sources
+
+    @staticmethod
+    def _get_name(name):
+        if Helpers.is_number(name):
+            return name
+        return f'@{name}'
 
     def save(self, channel: Channel):
         def updater(data):
