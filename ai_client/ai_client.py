@@ -16,7 +16,7 @@ def format_content(content: str, tag, text):
 class AIClient:
     def __init__(self, api_key, max_retries):
         self.client = OpenAI(api_key=api_key)
-        self.max_retries = max_retries
+        self.max_retries = max_retries if max_retries < 6 else 5
 
     async def run(self, message: ChannelMessage):
         logger.log(LogLevel.Debug, 'Running AI model')
