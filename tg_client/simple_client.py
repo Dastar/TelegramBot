@@ -1,5 +1,6 @@
 import telethon
 from telethon import TelegramClient
+from telethon.tl.functions.messages import GetHistoryRequest
 
 from events.channel_message import ChannelMessage
 from logger import LogLevel
@@ -44,13 +45,9 @@ class SimpleClient:
         else:
             await self._send_message(message)
 
-    @staticmethod
-    def callback(current, total):
-        print('Uploaded', current, 'out of', total,
-              'bytes: {:.2%}'.format(current / total))
-
     async def _send_media(self, target, media, delay, message="") -> Status:
         try:
+            # entity = await self.client.get_entity(target)
             sent = await self.client.send_message(target,
                                                   message,
                                                   parse_mode='md',

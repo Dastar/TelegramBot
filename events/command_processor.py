@@ -85,4 +85,3 @@ class CommandProcessor:
         if command[1].lower() == 'forward':
             self.configs['forward_message'] = ' '.join(command[2:])
             logger.log(LogLevel.Info, f"Forwarded message set to {self.configs['forward_message']}")
-

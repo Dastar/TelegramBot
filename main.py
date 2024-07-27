@@ -5,19 +5,19 @@ from setup import CONFIGS, logger
 from tg_client.telegram_bot import TelegramBot
 
 
-def main():
+async def main():
     """Main function to run the program."""
     config = CONFIGS.safe_read_configuration()
     bot = TelegramBot(config)
 
-    return asyncio.run(bot.run_client())
+    return await bot.run_client()
 
 
 if __name__ == '__main__':
     while True:
         try:
-            result = main()
-            if result == 'restart':  # Adjust this condition based on the actual return value that indicates a restart
+            result = asyncio.run(main())
+            if result == 'restart': 
                 logger.log(LogLevel.Info, 'Restarting the application...')
                 continue
             break
