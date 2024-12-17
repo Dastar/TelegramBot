@@ -10,7 +10,7 @@ from events.factory import MessageFactory
 from events.message_processor import MessageProcessor
 from tg_client.channel_registry import ChannelRegistry
 from configuration_readers.channel_reader import ChannelReader
-from events.message_queue import MessageQueue
+from events.messages_dict import MessagesDict
 from logger import LogLevel
 from setup import logger
 from setup import setup_signal_handling
@@ -41,7 +41,7 @@ class TelegramBot:
         self.message_processor = MessageProcessor(self.aiclient, self.message_pool, self.config)
         self.is_running = False
         self._register_commands()
-        self.delayed = MessageQueue()
+        self.process_messages = MessagesDict()
 
     def _register_commands(self):
         """Register command handlers."""
@@ -78,11 +78,10 @@ class TelegramBot:
 
         await self.message_processor.process_message(message)
         logger.log(LogLevel.Debug, f"Translated text: {message.output_text}")
-        if self.config['to_delay']:
-            logger.log(LogLevel.Info, 'The message is delayed. The original message sent to sender')
-            message.set_temp_target(event.chat.username)
-            await self.delayed.put(message)
         await self.client.send(message)
+        if not message.approved:
+            h = message.get_hash()
+            await self.process_messages.set(h, message)
         logger.log(LogLevel.Debug, "Exiting handle_new_message")
 
     async def handle_restart_event(self, event):
@@ -101,20 +100,46 @@ class TelegramBot:
     async def handle_edited_messages(self, event):
         """Handle edited messages."""
         logger.log(LogLevel.Debug, "Handling edited message")
-        if event.message.text.startswith('/role'):
-            channel = self.channels.get_channel(event.chat.username)
-            logger.log(LogLevel.Debug, f"Editing role {channel.role.name}")
-            channel.role.from_text(event.message.text)
-        message = await self.delayed.get(event.message.id)
-        if message is None:
+        # if event.message.text.startswith('/role'):
+        #     channel = self.channels.get_channel(event.chat.username)
+        #     logger.log(LogLevel.Debug, f"Editing role {channel.role.name}")
+        #     channel.role.from_text(event.message.text)
+        # message = await self.delayed.get(event.message.id)
+        # if message is None:
+        #     return
+        # message.output_text = event.message.text
+        # await self.client.send(message)
+
+    async def handle_button_events(self, event):
+        logger.log(LogLevel.Debug, "Handling button message")
+
+        data = event.data.decode()
+        data, key = data.split(":")
+        message = await self.process_messages.get(int(key))
+        if message is None and data != "delete":
+            logger.log(LogLevel.Error, f"Message {key} not found.")
+            await event.respond("Message not found.")
             return
-        message.output_text = event.message.text
-        await self.client.send(message)
+        if data == "send":
+            message.approved = True
+            await self.client.send(message)
+
+        elif data == "regenerate":
+            await self.message_processor.process_message(message)
+            await self.client.send(message)
+            await self.client.client.delete_messages(event.chat_id, event.message_id)
+        elif data == "delete":
+            await self.client.client.delete_messages(event.chat_id, event.message_id)
+            await self.process_messages.delete(key)
+        else:
+            await event.respond("Unknown option selected.")
+        # await event.respond(f"Message Id: {event.}")
 
     def setup_event_handlers(self):
         self.client.set_up_handler(events.NewMessage(chats=self.channels.get_monitored()), self.handle_new_message)
         self.client.set_up_handler(events.CallbackQuery(), self.handle_callback_query)
         self.client.set_up_handler(events.MessageEdited(), self.handle_edited_messages)
+        self.client.set_up_handler(events.CallbackQuery(), self.handle_button_events)
 
     # async def async_sender(self):
     #     while not self.stop_event.is_set() or not self.restart_event.is_set():

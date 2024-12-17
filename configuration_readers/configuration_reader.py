@@ -61,7 +61,8 @@ class Configurations:
             'forward_message': self.read(ConfigProperty.ForwardMessage),
             'session_name': self.read(ConfigProperty.SessionName),
             'to_delay': self.read('Delay') == 'True',
-            'max_retries': int(self.read('MaxGPTRetries'))
+            'max_retries': int(self.read('MaxGPTRetries')),
+            'bot_token': self.read('BotToken'),
         }
 
     def safe_read_configuration(self):
@@ -76,5 +77,6 @@ class Configurations:
             'forward_message': self.read_str(ConfigProperty.ForwardMessage),
             'session_name': self.read_str(ConfigProperty.SessionName),
             'to_delay': self.read_bool('Delay'),
-            'max_retries': self.read_int('MaxGPTRetries')
+            'max_retries': self.read_int('MaxGPTRetries'),
+            'bot_token': self.read('BotToken'),
         }

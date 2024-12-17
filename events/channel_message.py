@@ -8,11 +8,13 @@ from setup import logger
 
 
 class ChannelMessage:
-    def __init__(self, message, sender, channel, generate_image=False):
+    def __init__(self, message, message_id, sender_id, sender, channel, generate_image=False):
         self.messages = [message]
         self.media = []
         self.sent_id = []
         self.sender = sender
+        self.id = message_id
+        self.sender_id = sender_id
         self.grouped_id = message.grouped_id
         self.forward = message.forward
         self.channel = channel
@@ -25,6 +27,7 @@ class ChannelMessage:
         self.generate_image = generate_image
         self.code_blocks = None
         self.temp_target = None
+        self.approved = False
 
     def __del__(self):
         for m in self.media:
@@ -100,3 +103,9 @@ class ChannelMessage:
 
     def get_sender(self):
         return self.messages[0].chat.username
+
+    def get_hash(self):
+        return hash((self.id, self.sender))
+
+    def __hash__(self):
+        return self.get_hash()

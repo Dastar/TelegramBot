@@ -40,6 +40,8 @@ class MessageFactory:
 
     def _create_message(self, event) -> ChannelMessage:
         msg = event.message
+        msg_id = event.message.id
+        sender_id = event.sender.id
         channel = self.channels.get_channel(event.chat.username)
         if channel is None:
             logger.log(LogLevel.Error, f'Target for {event.chat.username} not found.')
@@ -55,7 +57,7 @@ class MessageFactory:
             logger.log(LogLevel.Info, 'Got generating image command')
             generate_image = True
 
-        message = ChannelMessage(msg, event.chat.username, channel, generate_image)
+        message = ChannelMessage(msg, msg_id, sender_id, event.chat.username, channel, generate_image)
         return message
 
     def remove_message(self, gid):
