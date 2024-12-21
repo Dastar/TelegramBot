@@ -33,6 +33,7 @@ See requirements.txt file
     ApiKey = OpenAIApiKey
     ApiId = TelegramApiId
     ApiHash = TelegramApiHash
+    BotToken = 123456890:AAABBBBCCCCDDDDEEEEFFFFGGGG
     SessionName = sessions_folder/session_name
     LogFile = logger.log
     LogLevel = INFO
@@ -83,7 +84,7 @@ See requirements.txt file
     ```
 
 2. The bot will start listening to the specified Telegram channels. When a new message appears, it will be translated and sent to the target channel.
-3. The bot has commands for execution:
+4. The bot has commands for execution:
    * /image - for the next sent message will be added generated image using image_role key from the channel configuration.
    * /log - send to monitored channel last 15 messages from the log file
    * /role [name] - returns the current role of the channel. If [name] specified, role with the [name] will be attached to the role. Editing role is enabled 
