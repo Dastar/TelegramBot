@@ -14,12 +14,25 @@ def format_content(content: str, tag, text):
 
 
 class AIClient:
-    def __init__(self, api_key, max_retries):
+    def __init__(self, api_key, max_retries, is_on: True):
         self.client = OpenAI(api_key=api_key)
+        self.is_on = is_on
         self.max_retries = max_retries if max_retries < 6 else 5
+
+    async def turn_off(self, event):
+        logger.log(LogLevel.Debug, "Model is off")
+        self.is_on = False
+
+    async def turn_on(self, event):
+        logger.log(LogLevel.Debug, "Model is on")
+        self.is_on = True
 
     async def run(self, message: ChannelMessage):
         logger.log(LogLevel.Debug, 'Running AI model')
+        if not self.is_on:
+            message.output_text = f"Model is Off. Original message:\n\n{message.get_text()}"
+            return
+
         content, result = await self.run_model(message.get_text(), message.channel)
         message.output_text = content
         if not result:

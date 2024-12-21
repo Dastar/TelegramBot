@@ -80,7 +80,7 @@ class SimpleClient:
             sent = await self.client.send_message(message.sender_id,
                                                   text,
                                                   parse_mode='md',
-                                                  buttons=buttons)
+                                                  buttons=buttons, link_preview=False)
             return Status.Success
         except telethon.errors.MediaCaptionTooLongError as ex:
             logger.log(LogLevel.Error, f"Media caption too long")

@@ -15,7 +15,11 @@ class MessageProcessor:
         """Process message content and media."""
         await self._wait_for_grouped_messages(message)
         message.download_tg_media()
+        message = await self.generate_text(message)
 
+        return message
+
+    async def generate_text(self, message: ChannelMessage):
         text = message.get_message_text()
         if text.strip():
             logger.log(LogLevel.Debug, 'Got message with text')

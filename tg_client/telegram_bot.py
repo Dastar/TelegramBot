@@ -1,7 +1,6 @@
 from telethon import TelegramClient, events
 import asyncio
 
-
 from configuration_readers.data_reader import DataReader
 from configuration_readers.role_reader import RoleReader
 from ai_client.ai_client import AIClient
@@ -20,7 +19,7 @@ from tg_client.simple_client import SimpleClient
 class TelegramBot:
     def __init__(self, config):
         self.config = config
-        self.aiclient = AIClient(self.config['api_key'], self.config['max_retries'])
+        self.aiclient = AIClient(self.config['api_key'], self.config['max_retries'], True)
 
         reader = DataReader(self.config['bot_config'])
         self.role_reader = RoleReader(reader)
@@ -50,6 +49,8 @@ class TelegramBot:
         self.register_command('/role', self.command_processor.role_command)
         self.register_command('/save', self.command_processor.save_command)
         self.register_command('/config', self.command_processor.config_command)
+        self.register_command('/modeloff', self.aiclient.turn_off)
+        self.register_command('/modelon', self.aiclient.turn_on)
 
     def register_command(self, command, handler):
         self.command_processor.register_command(command, handler)
@@ -100,6 +101,14 @@ class TelegramBot:
     async def handle_edited_messages(self, event):
         """Handle edited messages."""
         logger.log(LogLevel.Debug, "Handling edited message")
+        if event.message.buttons is not None:
+            try:
+                message_id = event.message.buttons[0][0].data.decode().split(":")[1]
+                message = await self.process_messages.get(int(message_id))
+                message.output_text = event.message.text
+                return
+            except Exception as e:
+                logger.log(LogLevel.Error, f'Failed to edit message with buttons: {e}')
         # if event.message.text.startswith('/role'):
         #     channel = self.channels.get_channel(event.chat.username)
         #     logger.log(LogLevel.Debug, f"Editing role {channel.role.name}")
@@ -125,7 +134,7 @@ class TelegramBot:
             await self.client.send(message)
 
         elif data == "regenerate":
-            await self.message_processor.process_message(message)
+            await self.message_processor.generate_text(message)
             await self.client.send(message)
             await self.client.client.delete_messages(event.chat_id, event.message_id)
         elif data == "delete":
