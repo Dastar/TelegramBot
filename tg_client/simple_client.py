@@ -1,5 +1,5 @@
 import telethon
-from telethon import TelegramClient, Button
+from telethon import TelegramClient, Button, events
 from telethon.tl.functions.messages import GetHistoryRequest
 
 from events.channel_message import ChannelMessage
@@ -20,6 +20,8 @@ class SimpleClient:
         self.client = TelegramClient(config['session_name'], config['api_id'], config['api_hash'])
         self.parse_mode = parse_mode
         self.token = config['bot_token']
+        self.captions = [[("Regenerate", "regenerate:{}"), ("Send", "send:{}")],
+                         [("New Image", "image:{}"), ("Delete", "delete:{}")]]
 
     def set_up_handler(self, event, handler):
         self.client.on(event)(handler)
@@ -43,6 +45,18 @@ class SimpleClient:
                 status = await self._send_message(message)
         else:
             await self._send_process_message(message)
+
+    def generate_buttons(self, captions, data_id=None):
+        if isinstance(captions, tuple):
+            data = captions[1] if data_id is None else captions[1].format(data_id)
+            return Button.inline(captions[0], data)
+        elif isinstance(captions, str):
+            return Button.inline(captions, captions)
+        else:
+            buttons = []
+            for c in captions:
+                buttons.append(self.generate_buttons(c, data_id))
+            return buttons
 
     async def _send_message(self, message: ChannelMessage) -> Status:
         target = message.get_target()
@@ -72,11 +86,7 @@ class SimpleClient:
         try:
             text = message.get_output()
             mhash = message.get_hash()
-            buttons = [
-                [Button.inline("Regenerate", f"regenerate:{mhash}".encode()),
-                 Button.inline("Send", f"send:{mhash}".encode())],
-                [Button.inline("Delete", f"delete:{mhash}".encode())],
-            ]
+            buttons = self.generate_buttons(self.captions, mhash)
             sent = await self.client.send_message(message.sender_id,
                                                   text,
                                                   parse_mode='md',

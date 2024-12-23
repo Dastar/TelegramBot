@@ -44,16 +44,24 @@ class TelegramBot:
 
     def _register_commands(self):
         """Register command handlers."""
-        self.register_command('/image', self.command_processor.generate_image_command)
+        # self.register_command('/image', self.command_processor.generate_image_command)
         self.register_command('/log', self.command_processor.get_log_command)
         self.register_command('/role', self.command_processor.role_command)
         self.register_command('/save', self.command_processor.save_command)
-        self.register_command('/config', self.command_processor.config_command)
+        # self.register_command('/config', self.command_processor.config_command)
         self.register_command('/modeloff', self.aiclient.turn_off)
         self.register_command('/modelon', self.aiclient.turn_on)
+        self.register_command("/command", self.get_command_list)
 
     def register_command(self, command, handler):
         self.command_processor.register_command(command, handler)
+
+    async def get_command_list(self, event):
+        commands = [[c] for c in self.command_processor.commands.keys()]
+        buttons = self.client.generate_buttons(commands)
+        await event.respond("Commands: ", buttons=buttons)
+        if isinstance(event, events.NewMessage.Event):
+            await self.client.client.delete_messages(event.chat.id, event.message.id)
 
     def _setup_channels(self):
         """Set up channel registry and readers."""
@@ -103,46 +111,93 @@ class TelegramBot:
         logger.log(LogLevel.Debug, "Handling edited message")
         if event.message.buttons is not None:
             try:
+                logger.log(LogLevel.Debug, "Editing generated message")
                 message_id = event.message.buttons[0][0].data.decode().split(":")[1]
                 message = await self.process_messages.get(int(message_id))
                 message.output_text = event.message.text
                 return
             except Exception as e:
                 logger.log(LogLevel.Error, f'Failed to edit message with buttons: {e}')
-        # if event.message.text.startswith('/role'):
-        #     channel = self.channels.get_channel(event.chat.username)
-        #     logger.log(LogLevel.Debug, f"Editing role {channel.role.name}")
-        #     channel.role.from_text(event.message.text)
-        # message = await self.delayed.get(event.message.id)
-        # if message is None:
-        #     return
-        # message.output_text = event.message.text
-        # await self.client.send(message)
+        if event.message.text.startswith('/role'):
+            channel = self.channels.get_channel(event.chat.username)
+            logger.log(LogLevel.Debug, f"Editing role {channel.role.name}")
+            channel.role.from_text(event.message.text)
 
     async def handle_button_events(self, event):
         logger.log(LogLevel.Debug, "Handling button message")
+        try:
+            data = event.data.decode()
 
-        data = event.data.decode()
-        data, key = data.split(":")
-        message = await self.process_messages.get(int(key))
-        if message is None and data != "delete":
-            logger.log(LogLevel.Error, f"Message {key} not found.")
-            await event.respond("Message not found.")
-            return
-        if data == "send":
+            # Handle direct command execution
+            if data in self.command_processor.commands:
+                await event.answer(f"Executing {data}")
+                await self.command_processor.execute_command(data, event)
+                return
+
+            # Validate data format
+            if ":" not in data:
+                await event.respond("Unknown option selected.")
+                return
+
+            # Parse data and key
+            action, key = data.split(":")
+            message = await self.process_messages.get(int(key))
+
+            # Handle missing messages
+            if message is None and action != "delete":
+                logger.log(LogLevel.Error, f"Message {key} not found.")
+                await event.respond("Message not found.")
+                return
+
+            # Perform actions based on parsed data
+            action_handlers = {
+                "send": self._handle_send_action,
+                "regenerate": self._handle_regenerate_action,
+                "delete": self._handle_delete_action,
+                "image": self._handle_image_action
+            }
+
+            handler = action_handlers.get(action, self._handle_unknown_action)
+            await handler(event, message, key)
+        except Exception as e:
+            logger.log(LogLevel.Error, f"Error handling button event: {e}")
+            await event.respond("An error occurred while processing the request.")
+
+    async def _handle_send_action(self, event, message, key):
+        try:
             message.approved = True
             await self.client.send(message)
+        except Exception as e:
+            logger.log(LogLevel.Error, f"Error in send action: {e}")
 
-        elif data == "regenerate":
+    async def _handle_regenerate_action(self, event, message, key):
+        try:
             await self.message_processor.generate_text(message)
             await self.client.send(message)
             await self.client.client.delete_messages(event.chat_id, event.message_id)
-        elif data == "delete":
+        except Exception as e:
+            logger.log(LogLevel.Error, f"Error in regenerate action: {e}")
+
+    async def _handle_delete_action(self, event, message, key):
+        try:
             await self.client.client.delete_messages(event.chat_id, event.message_id)
             await self.process_messages.delete(key)
-        else:
-            await event.respond("Unknown option selected.")
-        # await event.respond(f"Message Id: {event.}")
+        except Exception as e:
+            logger.log(LogLevel.Error, f"Error in delete action: {e}")
+
+    async def _handle_image_action(self, event, message, key):
+        try:
+            if not self.aiclient.is_on:
+                await event.respond("The model is off. The image will not be generated.")
+                return
+            await event.respond("Generating new image. The media will be attached to the message when finished.")
+            await self.aiclient.generate_image(message)
+            await self.client.client.send_file(message.sender, message.media[0])
+        except Exception as e:
+            logger.log(LogLevel.Error, f"Error in image action: {e}")
+
+    async def _handle_unknown_action(self, event, message, key):
+        await event.respond("Unknown option selected.")
 
     def setup_event_handlers(self):
         self.client.set_up_handler(events.NewMessage(chats=self.channels.get_monitored()), self.handle_new_message)

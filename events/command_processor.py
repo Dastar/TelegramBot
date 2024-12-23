@@ -2,6 +2,7 @@ import asyncio
 
 from configuration_readers.channel_reader import ChannelReader
 from configuration_readers.role_reader import RoleReader
+from events.factory import MessageFactory
 from logger import LogLevel
 from setup import logger
 from events.channel_message import ChannelMessage
@@ -36,7 +37,7 @@ class CommandProcessor:
     async def generate_image_command(self, event):
         """Handle the /generate_image command."""
         try:
-            self.message_pool.queue.put_nowait("GenerateImage")
+            self.message_pool.message_command.put_nowait("GenerateImage")
             logger.log(LogLevel.Info, 'Got image generating command. Next post will appear with generated image')
         except asyncio.QueueFull:
             logger.log(LogLevel.Warning, 'Error: command queue is full.')
@@ -45,16 +46,17 @@ class CommandProcessor:
         """Handle the /get_log command."""
         logger.log(LogLevel.Info, "Got log command")
 
-        message = self.message_pool.create_message(event)
+        message = self.message_pool.generate_message(event)
         message.output_text = logger.get_log()
         message.set_temp_target(event.chat.username)
+        message.approved = True
         await self.client.send(message)
 
     async def role_command(self, event):
         """Handle the /role command."""
         logger.log(LogLevel.Info, "Got edit role command")
-
-        command = event.message.text.split(' ')
+        message = MessageFactory.get_event_message(event)
+        command = "" if message is None else message.text.split(' ')
         channel = self.channels.get_channel(event.chat.username)
 
         if len(command) > 1:

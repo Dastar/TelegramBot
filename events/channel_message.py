@@ -15,12 +15,12 @@ class ChannelMessage:
         self.sender = sender
         self.id = message_id
         self.sender_id = sender_id
-        self.grouped_id = message.grouped_id
-        self.forward = message.forward
+        self.grouped_id = -1 if message is None else message.grouped_id
+        self.forward = None if message is None else message.forward
         self.channel = channel
         self.time = time.time()
         self.delay = 0
-        self.output_text = message.text
+        self.output_text = "" if message is None else message.text
         self.buttons = None
         self.send_media = True
         self.send_text = True
@@ -82,10 +82,11 @@ class ChannelMessage:
         if not self.forward:
             return
         name = 'Unknown'
-        if self.forward.sender:
-            name = self.forward.sender.username
-        elif self.forward.channel_post > 0:
-            name = self.forward.chat.title
+        if self.forward is not None:
+            if self.forward.sender:
+                name = self.forward.sender.username
+            elif self.forward.channel_post > 0:
+                name = self.forward.chat.title
         self.output_text = forwarded_message.replace('{name}', name).replace('{line}', '\n') + self.output_text
 
     def get_target(self):

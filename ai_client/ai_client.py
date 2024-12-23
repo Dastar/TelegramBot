@@ -38,8 +38,6 @@ class AIClient:
         if not result:
             message.to_sender()
             return
-        if message.generate_image:
-            await self.generate_image(message)
 
     async def run_model(self, text: str, channel):
         logger.log(LogLevel.Debug, f"running text model {channel.model}")
@@ -70,24 +68,45 @@ class AIClient:
         return "Error: Max retries exceeded for OpenAI API request", False
 
     async def generate_image(self, message: ChannelMessage):
+        if not self.is_on:
+            raise Exception("Model is off.")
         channel = message.channel
 
-        logger.log(LogLevel.Debug, f"running generating image model {channel.image_model}")
+        logger.log(LogLevel.Debug, f"Starting image generation using model {channel.image_model}")
+
         try:
+            # Prepare the prompt for image generation
             text = channel.get_image_generate_message(message.get_text())
-            response = openai.images.generate(prompt=text[1]['content'], n=1, size=channel.image_size, model=channel.image_model)
+            prompt = text[1]['content']  # Extract prompt content
+
+            # Request image generation from OpenAI
+            response = self.client.images.generate(
+                prompt=prompt,
+                n=1,
+                size=channel.image_size,
+                model=channel.image_model
+            )
+
+            # Process the response
             image_url = response.data[0].url
-            logger.log(LogLevel.Debug, f'Image url: {image_url}')
+            logger.log(LogLevel.Info, f"Generated image URL: {image_url}")
+
+            # Download and save the image locally
             async with aiohttp.ClientSession() as session:
                 async with session.get(image_url) as img_response:
                     if img_response.status == 200:
-                        image_path = f'download/aiimage{time.time()}.png'
+                        image_path = f'download/generated_image_{time.time()}.png'
                         with open(image_path, 'wb') as file:
                             file.write(await img_response.read())
+
+                        # Attach the image to the message
+                        message.media.clear()
                         message.media.append(image_path)
+                        logger.log(LogLevel.Info, f"Image saved at {image_path}")
                     else:
-                        logger.log(LogLevel.Error, f"Failed to download image, status code: {img_response.status}")
-                        return
+                        logger.log(LogLevel.Error, f"Failed to download image. Status code: {img_response.status}")
+
+        except openai.OpenAIError as e:
+            logger.log(LogLevel.Error, f"OpenAI error during image generation: {e}")
         except Exception as e:
-            logger.log(LogLevel.Error, f"An error occurred while generating the image: {e}")
-            return
+            logger.log(LogLevel.Error, f"Unexpected error in image generation: {e}")
