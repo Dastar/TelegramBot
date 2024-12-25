@@ -14,8 +14,8 @@ def format_content(content: str, tag, text):
 
 
 class AIClient:
-    def __init__(self, api_key, max_retries, is_on: True):
-        self.client = OpenAI(api_key=api_key)
+    def __init__(self, api_key, max_retries, base_url, is_on: True):
+        self.client = OpenAI(api_key=api_key, base_url=base_url)
         self.is_on = is_on
         self.max_retries = max_retries if max_retries < 6 else 5
 

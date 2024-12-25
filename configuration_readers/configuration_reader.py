@@ -63,6 +63,7 @@ class Configurations:
             'to_delay': self.read('Delay') == 'True',
             'max_retries': int(self.read('MaxGPTRetries')),
             'bot_token': self.read('BotToken'),
+            'base_url': self.read('BaseUrl'),
         }
 
     def safe_read_configuration(self):
@@ -79,4 +80,5 @@ class Configurations:
             'to_delay': self.read_bool('Delay'),
             'max_retries': self.read_int('MaxGPTRetries'),
             'bot_token': self.read('BotToken'),
+            'base_url': self.read('BaseUrl'),
         }

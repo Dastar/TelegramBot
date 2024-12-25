@@ -19,7 +19,7 @@ from tg_client.simple_client import SimpleClient
 class TelegramBot:
     def __init__(self, config):
         self.config = config
-        self.aiclient = AIClient(self.config['api_key'], self.config['max_retries'], True)
+        self.aiclient = AIClient(self.config['api_key'], self.config['max_retries'], self.config['base_url'], True)
 
         reader = DataReader(self.config['bot_config'])
         self.role_reader = RoleReader(reader)
