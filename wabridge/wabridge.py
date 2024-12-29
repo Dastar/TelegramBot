@@ -65,10 +65,11 @@ class WhatsAppClient:
         if groups is not None:
             logger.log(LogLevel.Info, f'[WhatsApp] Found {groups.get('size')} groups')
 
-    def post(self, endpoint, data=None):
+    def post(self, endpoint, data=None, sleep=1):
         url = f"{self.server_url}/{endpoint}"
         try:
             response = requests.post(url, json=data)
+            time.sleep(sleep)
             if response.status_code == 200:
                 return response.json()
             else:
@@ -103,6 +104,16 @@ class WhatsAppClient:
         Retrieve a list of cached groups.
         """
         return self.post("list-groups")
+
+    def send_media(self, group_id, media, caption):
+        if isinstance(media, str):
+            media = [media]
+        data = {
+            "groupId": group_id,
+            "media": media,
+            "caption": caption
+        }
+        return self.post('send-media', data, sleep=2)
 
 
 # Example Usage

@@ -40,7 +40,8 @@ app.post('/cache', async(req, res) => {
 });
 
 app.post('/is-connected', async(req, res) =>{
-    const state = await whatsapp.isLoggedIn();
+    let state = await whatsapp.isLoggedIn();
+    state = state && whatsapp.isReady();
     res.json({message: `${state}`})
 });
 
@@ -81,22 +82,36 @@ app.get('/list-groups', (req, res) => {
 });
 
 app.post('/send-media', async (req, res) => {
-    const { groupId, caption, links } = req.body;
-
-    if (!groupId || !Array.isArray(links) || links.length === 0) {
-        return res.status(400).json({ error: 'Group ID and a non-empty list of media links are required.' });
-    }
-
     try {
-        for (const link of links) {
-            const media = await MessageMedia.fromUrl(link);
-            await whatsappClient.sendMessage(groupId, media, caption);
-            console.log(`[WhatsApp] Media sent from link: ${link}`);
+        // Check if files were uploaded
+        if (!req.body.media) {
+            return res.status(400).json({ success: false, error: 'No files uploaded.' });
         }
-        res.json({ success: true, message: 'Media links sent successfully!' });
+
+        // Check group ID
+        const groupId = req.body.groupId;
+        if (!groupId) {
+            return res.status(400).json({ success: false, error: 'No group ID provided.' });
+        }
+
+        const files = Array.isArray(req.body.media) ? req.body.media : [req.body.media]; // Handle single/multiple files
+        const targetGroup = whatsapp.getTargetGroup(groupId);
+        const result = await whatsapp.sendFiles(targetGroup, files, req.body.caption);
+        console.log(result);
+
+        if (result.success === true) {
+
+        console.log("Sent files to wa");
+            
+            res.json({success: true});
+        } else {
+        console.log("failed to send files to wa");
+
+            res.json({success: false, error: result.error});
+        }
     } catch (err) {
-        console.error('[WhatsApp] Error sending media links:', err);
-        res.status(500).json({ error: 'Failed to send media links.' });
+        console.error('Error handling file upload:', err);
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 

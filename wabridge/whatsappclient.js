@@ -1,18 +1,22 @@
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
+const fs = require('fs');
 
 class WhatsAppClient {
     constructor(id) {
         this.client = new Client({
             authStrategy: new LocalAuth({clientId: id}),
-            puppeteer: { headless: true }
+            puppeteer: { 
+                headless: true,
+                executablePath: '/usr/bin/google-chrome-stable'
+             }
         });
 
         this.groups = new Map(); // Store groups with server 'g.us'
         this.targetGroup = null;
         this.reconnectAttempts = 0; // Track reconnection attempts
         this.maxReconnectAttempts = 5; // Limit retries to avoid loops
-
+        this.ready = false;
         this.initializeEvents();
     }
 
@@ -26,6 +30,7 @@ class WhatsAppClient {
         // Ready Event
         this.client.on('ready', async () => {
             console.log('[WhatsApp] Client is ready!');
+            this.ready = true;
             this.reconnectAttempts = 0; // Reset reconnect attempts on successful connection
             // await this.cacheGroups(); // Cache groups on startup
         });
@@ -84,6 +89,10 @@ class WhatsAppClient {
         }
     }
 
+    isReady() {
+        return this.ready;
+    }
+
     async cacheGroups() {
         try {
             console.log('[WhatsApp] Getting chats');
@@ -128,6 +137,41 @@ class WhatsAppClient {
             throw err;
         }
     }
+
+    async sendFiles(target, filePaths, caption = '') {
+        if (!Array.isArray(filePaths)) {
+            throw new Error('filePaths must be an array of file paths.');
+        }
+    
+        const errors = []; // To store results for each file
+    
+        for (const filePath of filePaths) {
+            if (!fs.existsSync(filePath)) {
+                console.error(`[WhatsApp] File not found: ${filePath}`);
+                errors.push(`File ${filePath} not found`);
+                continue; // Skip this file and process the next one
+            }
+    
+            try {
+                // Load the file
+                const media = await MessageMedia.fromFilePath(filePath);
+    
+                // Send the file with an optional caption
+                const result = await this.client.sendMessage(target.id._serialized, media, { caption });
+                console.log(`[WhatsApp] File sent: ${filePath}`);
+            } catch (err) {
+                console.error(`[WhatsApp] Error sending file (${filePath}):`, err);
+                errors.push(err.message);
+            }
+        }
+    
+        if (errors.length == 0) return {success: true};
+        else {
+            const err = errors.join(' ');
+            return {success: false, error: err};
+        }
+    }
+    
 }
 
 module.exports = WhatsAppClient;
