@@ -18,7 +18,11 @@ class ChannelReader:
         image_role = self.role_reader.get_role(data['image_role'])
         image_model = data['image_model']
         size = data['image_size']
-        channel = Channel(data['name'], self._get_name(data['target']), role, data['tags'], data['model'], image_role, image_model, size)
+        channel = Channel(data['name'],
+                          self._get_name(data['target']),
+                          data['watarget'],
+                          role, data['tags'], data['model'],
+                          image_role, image_model, size)
         sources = [self._get_name(m) for m in data['monitored'].split(';') if m.strip()]
         return channel, sources
 

@@ -64,6 +64,8 @@ class Configurations:
             'max_retries': int(self.read('MaxGPTRetries')),
             'bot_token': self.read('BotToken'),
             'base_url': self.read('BaseUrl'),
+            'clientId': self.read('ClientID'),
+            'exe': self.read('Executable'),
         }
 
     def safe_read_configuration(self):
@@ -81,4 +83,6 @@ class Configurations:
             'max_retries': self.read_int('MaxGPTRetries'),
             'bot_token': self.read('BotToken'),
             'base_url': self.read('BaseUrl'),
+            'clientId': self.read('ClientID'),
+            'exe': self.read('Executable'),
         }

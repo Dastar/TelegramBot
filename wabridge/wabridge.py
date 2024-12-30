@@ -7,13 +7,17 @@ import threading
 
 from logger import LogLevel
 from setup import logger
+from events.channel_message import ChannelMessage
 
 
 class WhatsAppClient:
-    def __init__(self, server_url):
+    def __init__(self, client_id, server_url, executable='/usr/bin/google-chrome-stable'):
         self.server_url = server_url
         self.server_process = None
-        self.ready = False
+        self.client_id = client_id
+        self.executable = executable
+        self.start_time = 0
+        self.state = "Disconnected"
 
     def start(self):
         """Start the server and check the connection."""
@@ -37,24 +41,64 @@ class WhatsAppClient:
         threading.Thread(target=self._stream, daemon=True).start()
 
         # Wait briefly to allow server startup
-        time.sleep(5)
-        self.post('start', {"clientId": "dastar"})
+        time.sleep(2)
+        data = {
+            "clientId": self.client_id,
+            "executablePath": self.executable,
+        }
+        self.post('start', data)
         time.sleep(2)
 
-        connection = self.run('is-connected', lambda r: 'true' in r.get('message'))
+        connection = self.run('get-state', lambda r: self._status_check(r))
+
+        if self.state == "QR event":
+            logger.log(LogLevel.Info, "[WhatsApp] QR event was triggered. Still connecting...")
+            self.run('get-state', lambda r: self._status_check(r))
+
         if connection is not None:
             logger.log(LogLevel.Info, "[WhatsApp] Successfully connected!")
         else:
             logger.log(LogLevel.Error, "[WhatsApp] Connection timeout exceeded.")
 
+    def send(self, message: ChannelMessage):
+        target = message.get_wa_target()
+        if self.state != 'Connected':
+            logger.log(LogLevel.Error, "WhatsApp client is not connected")
+            return
+        if target.strip() == "":
+            logger.log(LogLevel.Error, "No target to send WhatsApp")
+            return
+        if not message.approved:
+            return
+
+        logger.log(LogLevel.Info, f"Sending WhatsApp message to target: {target}")
+        text = message.get_text()
+        media = message.get_media()
+        if media:
+            self.send_media(target, media, text)
+        elif text.strip():
+            self.send_message(target, text)
+
+    def _status_check(self, request):
+        message = request.get("state")
+        if message == "qr":
+            logger.log(LogLevel.Info, "Got QR event")
+            self.start_time = time.time()
+            self.state = "QR event"
+            return False
+        elif message == "Connected":
+            self.state = message
+            return True
+        return False
+
     def run(self, endpoint, func, timeout=60):
-        start_time = time.time()
+        self.start_time = time.time()
         while True:
             response = self.post(endpoint)
             if func(response):
                 return response
                 # Exit if time exceeds 1 minute
-            if time.time() - start_time > timeout:
+            if time.time() - self.start_time > timeout:
                 return None
 
             # Wait 2 seconds before retrying
@@ -84,8 +128,6 @@ class WhatsAppClient:
                 break
             if output:
                 logger.log(LogLevel.Info, output.strip())
-                if output.strip() == '[WhatsApp] Client is ready!':
-                    self.ready = True
 
     def send_message(self, group_id, message):
         """
@@ -115,30 +157,15 @@ class WhatsAppClient:
         }
         return self.post('send-media', data, sleep=2)
 
+    def terminate(self):
+        if self.server_process and self.server_process.poll() is None:
+            self.server_process.terminate()
+            self.server_process.wait()  # Ensure the process is fully terminated
+
+    def __del__(self):
+        self.terminate()
+
 
 # Example Usage
 if __name__ == "__main__":
-    # Start the server
-
-    # Replace this URL with your server's address
-    server_url = "http://localhost:3000"
-    client = WhatsAppClient(server_url)
-    client.start()
-    # List groups
-
-    groups = client.list_groups()
-    # print("Groups:", json.dumps(groups, indent=4))
-
-    # Send a test message
-    group_id = "120363386281984067@g.us"  # Replace with a valid group ID
-    message = "Hello from Python Client!"
-    result = client.send_message(group_id, message)
-    print("Send Message Result:", json.dumps(result, indent=4))
-
-    # Keep the server running (Press Ctrl+C to stop)
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        print("[Server] Shutting down server...")
-        client.server_process.terminate()
+    pass

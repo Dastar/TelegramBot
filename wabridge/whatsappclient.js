@@ -3,12 +3,12 @@ const qrcode = require('qrcode-terminal');
 const fs = require('fs');
 
 class WhatsAppClient {
-    constructor(id) {
+    constructor(id, exe) {
         this.client = new Client({
             authStrategy: new LocalAuth({clientId: id}),
             puppeteer: { 
                 headless: true,
-                executablePath: '/usr/bin/google-chrome-stable'
+                executablePath: exe
              }
         });
 
@@ -17,13 +17,15 @@ class WhatsAppClient {
         this.reconnectAttempts = 0; // Track reconnection attempts
         this.maxReconnectAttempts = 5; // Limit retries to avoid loops
         this.ready = false;
+        this.qr = false;
         this.initializeEvents();
     }
 
     initializeEvents() {
         // QR Code Event
         this.client.on('qr', (qr) => {
-            console.log('[WhatsApp] QR event. Scan the code below:');
+            console.log('[WhatsApp] QR event');
+            this.qr = true;
             qrcode.generate(qr, { small: true });
         });
 
@@ -31,6 +33,7 @@ class WhatsAppClient {
         this.client.on('ready', async () => {
             console.log('[WhatsApp] Client is ready!');
             this.ready = true;
+            this.qr = false;
             this.reconnectAttempts = 0; // Reset reconnect attempts on successful connection
             // await this.cacheGroups(); // Cache groups on startup
         });
@@ -38,11 +41,13 @@ class WhatsAppClient {
         // Disconnected Event
         this.client.on('disconnected', async (reason) => {
             console.log('[WhatsApp] Disconnected:', reason);
+            this.qr = false;
             await this.reconnect(); // Attempt to reconnect
         });
 
         // Auth Failure Event
         this.client.on('auth_failure', (msg) => {
+            this.qr = false;
             console.error('[WhatsApp] Authentication failure:', msg);
             console.log('[WhatsApp] Attempting re-authentication...');
             this.reconnect(); // Retry authentication
@@ -50,6 +55,7 @@ class WhatsAppClient {
 
         // Connection Lost Event
         this.client.on('change_state', (state) => {
+            this.qr = false;
             console.log(`[WhatsApp] Connection state changed: ${state}`);
             if (state === 'CONFLICT' || state === 'UNLAUNCHED') {
                 console.log('[WhatsApp] Attempting to force re-authentication...');
@@ -59,6 +65,7 @@ class WhatsAppClient {
 
         // Catch Unexpected Errors
         this.client.on('error', (err) => {
+            this.qr = false;
             console.error('[WhatsApp] Unexpected error:', err);
             console.log('[WhatsApp] Restarting client...');
             this.reconnect(); // Restart the client on error
@@ -93,6 +100,10 @@ class WhatsAppClient {
         return this.ready;
     }
 
+    isQrCode() {
+        return this.qr;
+    }
+
     async cacheGroups() {
         try {
             console.log('[WhatsApp] Getting chats');
@@ -101,7 +112,7 @@ class WhatsAppClient {
             this.groups.clear(); // Clear existing cache
             allChats.forEach(chat => {
                 if (chat.id.server === 'g.us') {
-                    this.groups.set(chat.id._serialized, chat);
+                    this.groups.set(chat.name, chat);
                 }
             });
 
@@ -144,8 +155,8 @@ class WhatsAppClient {
         }
     
         const errors = []; // To store results for each file
-    
-        for (const filePath of filePaths) {
+        for (let i = 0; i < filePaths.length; i++) {
+            const filePath = filePaths[i];
             if (!fs.existsSync(filePath)) {
                 console.error(`[WhatsApp] File not found: ${filePath}`);
                 errors.push(`File ${filePath} not found`);
@@ -155,9 +166,15 @@ class WhatsAppClient {
             try {
                 // Load the file
                 const media = await MessageMedia.fromFilePath(filePath);
-    
+                let result = null;
+                if (i == filePaths.length - 1)
+                {
+                    result = await this.client.sendMessage(target.id._serialized, media, { caption });
+
+                } else {
+                    result = await this.client.sendMessage(target.id._serialized, media);
+                }
                 // Send the file with an optional caption
-                const result = await this.client.sendMessage(target.id._serialized, media, { caption });
                 console.log(`[WhatsApp] File sent: ${filePath}`);
             } catch (err) {
                 console.error(`[WhatsApp] Error sending file (${filePath}):`, err);

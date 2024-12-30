@@ -5,9 +5,11 @@ from ai_client.role import Role
 
 
 class Channel:
-    def __init__(self, name, target, role: Optional[Role], tags, model, image_role: Optional[Role], image_model, image_size):
+    def __init__(self, name, target, wa_target, role: Optional[Role], tags, model,
+                 image_role: Optional[Role], image_model, image_size):
         self.name = name
         self.target = target
+        self.wa_target = wa_target
         self.role = role
         self.tags = tags
         if self.role:

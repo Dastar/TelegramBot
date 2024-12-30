@@ -96,6 +96,9 @@ class ChannelMessage:
             return temp
         return self.channel.target
 
+    def get_wa_target(self):
+        return self.channel.wa_target
+
     def set_temp_target(self, target):
         self.temp_target = target
 

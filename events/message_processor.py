@@ -6,10 +6,11 @@ from setup import logger
 
 
 class MessageProcessor:
-    def __init__(self, ai_client, message_pool, configs):
+    def __init__(self, ai_client, message_pool, configs, senders):
         self.ai_client = ai_client
         self.message_pool = message_pool
         self.configs = configs
+        self.senders = []
 
     async def process_message(self, message: ChannelMessage):
         """Process message content and media."""

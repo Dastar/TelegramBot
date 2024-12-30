@@ -1,3 +1,4 @@
+import requests
 import telethon
 from telethon import TelegramClient, Button, events
 from telethon.tl.functions.messages import GetHistoryRequest
@@ -109,3 +110,15 @@ class SimpleClient:
         except Exception as ex:
             logger.log(LogLevel.Error, f"Error sending text to {target}: {ex}")
             return Status.Error
+
+    async def get_file_url(self, file_id):
+        """Fetches the file path and constructs the URL."""
+        url = f"https://api.telegram.org/bot{self.token}/getFile?file_id={file_id}"
+        response = requests.get(url)
+        result = response.json()
+
+        if result['ok']:
+            file_path = result['result']['file_path']
+            file_url = f"https://api.telegram.org/file/bot{self.token}/{file_path}"
+            return file_url
+        return None

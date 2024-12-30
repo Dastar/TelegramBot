@@ -17,13 +17,14 @@ app.use(bodyParser.json());
 let whatsapp = null;
 app.post('/start', async (req, res) => {
     const clientId = req.body.clientId;
+    const executablePath = req.body.executablePath;
     console.log("Starting the client with id: ", clientId);
     if (whatsapp && whatsapp.initialized) {
         return res.json({ success: true, message: 'WhatsApp Client already initialized!' });
     }
 
     try {
-        whatsapp = new WhatsAppClient(clientId);
+        whatsapp = new WhatsAppClient(clientId, executablePath);
         await whatsapp.initialize();
         res.json({ success: true, message: 'WhatsApp Client initialization started!' });
     } catch (err) {
@@ -39,10 +40,21 @@ app.post('/cache', async(req, res) => {
 
 });
 
-app.post('/is-connected', async(req, res) =>{
-    let state = await whatsapp.isLoggedIn();
-    state = state && whatsapp.isReady();
-    res.json({message: `${state}`})
+app.post('/get-state', async(req, res) =>{
+    if (whatsapp.isQrCode()) {
+        res.json({state: "QRCode"});
+    }
+    else {
+        const isLoggedIn = await whatsapp.isLoggedIn();
+        const isReady = whatsapp.isReady();
+        if (isLoggedIn && isReady)
+            res.json({state: `Connected`});
+        else if (isLoggedIn)
+            res.json({state: 'Connecting'});
+        else
+            res.json({state: 'Not Connected'});
+    }
+   
 });
 
 // API endpoint to send a message
@@ -68,7 +80,7 @@ app.post('/send-message', async (req, res) => {
 });
 
 // API endpoint to list cached groups
-app.get('/list-groups', (req, res) => {
+app.post('/list-groups', (req, res) => {
     try {
         const groups = Array.from(whatsapp.groups.values()).map(group => ({
             id: group.id._serialized,
@@ -99,7 +111,7 @@ app.post('/send-media', async (req, res) => {
         const result = await whatsapp.sendFiles(targetGroup, files, req.body.caption);
         console.log(result);
 
-        if (result.success === true) {
+        if (result.success) {
 
         console.log("Sent files to wa");
             

@@ -1,4 +1,6 @@
+import requests
 from telethon import TelegramClient, events
+from telethon.tl.types import MessageMediaPhoto, MessageMediaDocument, DocumentAttributeFilename
 import asyncio
 
 from configuration_readers.data_reader import DataReader
@@ -14,12 +16,13 @@ from logger import LogLevel
 from setup import logger
 from setup import setup_signal_handling
 from tg_client.simple_client import SimpleClient
+from wabridge.wabridge import WhatsAppClient
 
 
 class TelegramBot:
     def __init__(self, config):
         self.config = config
-        self.aiclient = AIClient(self.config['api_key'], self.config['max_retries'], self.config['base_url'], True)
+        self.aiclient = AIClient(self.config['api_key'], self.config['max_retries'], self.config['base_url'], False)
 
         reader = DataReader(self.config['bot_config'])
         self.role_reader = RoleReader(reader)
@@ -29,6 +32,7 @@ class TelegramBot:
         self.stop_event = asyncio.Event()
         self.restart_event = asyncio.Event()
         self.client = SimpleClient(self.config, 'md')
+        self.wa_client = WhatsAppClient(self.config['clientId'], r"http://localhost:3000", self.config['exe'])
 
         self.message_pool = MessageFactory(self.channels)
         self.command_processor = CommandProcessor(self.client,
@@ -37,7 +41,8 @@ class TelegramBot:
                                                   self.config,
                                                   self.role_reader,
                                                   self.channel_reader)
-        self.message_processor = MessageProcessor(self.aiclient, self.message_pool, self.config)
+        senders = [self.client.send, self.wa_client.send]
+        self.message_processor = MessageProcessor(self.aiclient, self.message_pool, self.config, senders)
         self.is_running = False
         self._register_commands()
         self.process_messages = MessagesDict()
@@ -167,6 +172,7 @@ class TelegramBot:
         try:
             message.approved = True
             await self.client.send(message)
+            self.wa_client.send(message)
         except Exception as e:
             logger.log(LogLevel.Error, f"Error in send action: {e}")
 
@@ -192,7 +198,7 @@ class TelegramBot:
                 return
             await event.respond("Generating new image. The media will be attached to the message when finished.")
             await self.aiclient.generate_image(message)
-            await self.client.client.send_file(message.sender, message.media[0])
+            answer = await self.client.client.send_file(message.sender, message.media[0])
         except Exception as e:
             logger.log(LogLevel.Error, f"Error in image action: {e}")
 
@@ -210,6 +216,7 @@ class TelegramBot:
     #         message = self.delayed.
 
     async def stop_client(self):
+        self.wa_client.terminate()
         if self.client.is_connected():
             await self.client.disconnect()
             logger.log(LogLevel.Info, 'Client disconnected successfully')
@@ -223,6 +230,8 @@ class TelegramBot:
         setup_signal_handling(loop, self.stop_event)
 
         try:
+            self.wa_client.start()
+            self.wa_client.cache_groups()
             await self.client.start()
             logger.log(LogLevel.Info, 'Client started successfully')
             self.setup_event_handlers()
