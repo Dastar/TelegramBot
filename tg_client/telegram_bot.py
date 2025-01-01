@@ -1,6 +1,5 @@
-import requests
-from telethon import TelegramClient, events
-from telethon.tl.types import MessageMediaPhoto, MessageMediaDocument, DocumentAttributeFilename
+import os.path
+from telethon import events
 import asyncio
 
 from configuration_readers.data_reader import DataReader
@@ -16,7 +15,7 @@ from logger import LogLevel
 from setup import logger
 from setup import setup_signal_handling
 from tg_client.simple_client import SimpleClient
-from wabridge.wabridge import WhatsAppClient
+from wabridge.whatsappclient import WhatsAppClient
 
 
 class TelegramBot:
@@ -172,7 +171,19 @@ class TelegramBot:
         try:
             message.approved = True
             await self.client.send(message)
-            self.wa_client.send(message)
+            media = []
+            for m in message.media:
+                logger.log(LogLevel.Info, "Downloading files before sending to WA")
+                url = await self.client.client.download_media(m, os.path.join('wabridge', 'downloads'))
+                file_name = os.path.basename(url)
+                if url:
+                    media.append(os.path.join('downloads', file_name))
+            message.link_media = media
+            logger.log(LogLevel.Info, "Sending message to WA")
+            await self.wa_client.send(message)
+            for f in media:
+                if f and os.path.exists(f):  # Ensure the file exists
+                    os.remove(f)
         except Exception as e:
             logger.log(LogLevel.Error, f"Error in send action: {e}")
 
@@ -197,8 +208,10 @@ class TelegramBot:
                 await event.respond("The model is off. The image will not be generated.")
                 return
             await event.respond("Generating new image. The media will be attached to the message when finished.")
-            await self.aiclient.generate_image(message)
-            answer = await self.client.client.send_file(message.sender, message.media[0])
+            image = await self.aiclient.generate_image(message)
+            answer = await self.client.client.send_file(message.sender, image)
+            message.media.clear()
+            message.media.append(answer.media)
         except Exception as e:
             logger.log(LogLevel.Error, f"Error in image action: {e}")
 
@@ -230,8 +243,7 @@ class TelegramBot:
         setup_signal_handling(loop, self.stop_event)
 
         try:
-            self.wa_client.start()
-            self.wa_client.cache_groups()
+            await self.wa_client.start()
             await self.client.start()
             logger.log(LogLevel.Info, 'Client started successfully')
             self.setup_event_handlers()

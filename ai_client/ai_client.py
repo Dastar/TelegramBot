@@ -100,9 +100,10 @@ class AIClient:
                             file.write(await img_response.read())
 
                         # Attach the image to the message
-                        message.media.clear()
-                        message.media.append(image_path)
+                        # message.media.clear()
+                        # message.media.append(image_path)
                         logger.log(LogLevel.Info, f"Image saved at {image_path}")
+                        return image_path
                     else:
                         logger.log(LogLevel.Error, f"Failed to download image. Status code: {img_response.status}")
 

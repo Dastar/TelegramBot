@@ -11,6 +11,7 @@ class ChannelMessage:
     def __init__(self, message, message_id, sender_id, sender, channel, generate_image=False):
         self.messages = [message]
         self.media = []
+        self.link_media = []
         self.sent_id = []
         self.sender = sender
         self.id = message_id
@@ -76,6 +77,11 @@ class ChannelMessage:
         if not self.send_media or len(self.media) == 0:
             return None
         return self.media
+
+    def get_link_media(self):
+        if not self.send_media or len(self.link_media) == 0:
+            return None
+        return self.link_media
 
     def get_forward_name(self, forwarded_message):
         """Retrieve the name of the original sender of a forwarded message."""
